@@ -124,6 +124,17 @@ def init_users():
         trocar_senha INTEGER DEFAULT 1
     )
     """)
+    # GARANTE COLUNA NOVA
+try:
+
+    cur.execute("""
+    ALTER TABLE usuarios
+    ADD COLUMN trocar_senha INTEGER DEFAULT 1
+    """)
+
+except:
+
+    pass
 
     # VERIFICA ADMIN
     cur.execute("""
