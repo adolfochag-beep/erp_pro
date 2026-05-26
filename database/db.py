@@ -101,7 +101,9 @@ def execute(sql, params=()):
 
 def init_users():
 
-    c = users_conn()
+    import bcrypt
+
+    c = sqlite3.connect("usuarios.db")
 
     cur = c.cursor()
 
@@ -113,13 +115,15 @@ def init_users():
     )
     """)
 
-    cur.execute("""
-    SELECT * FROM usuarios
-    WHERE usuario='admin'
-    """)
+    # VERIFICA SE ADMIN EXISTE
+    cur.execute(
+        "SELECT * FROM usuarios WHERE usuario = ?",
+        ("admin",)
+    )
 
     admin = cur.fetchone()
 
+    # SE NÃO EXISTIR -> CRIA
     if not admin:
 
         senha = bcrypt.hashpw(
