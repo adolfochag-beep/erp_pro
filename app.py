@@ -6,6 +6,8 @@ from database.db import (
     init_db,
     init_users
 )
+from modulos.login import show_login
+
 from utils.styles import load_css
 
 from modulos.login import show_login
