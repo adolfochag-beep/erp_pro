@@ -6,11 +6,15 @@ from database.db import (
     init_db,
     init_users
 )
+
+# INICIALIZA BANCOS PRIMEIRO
+init_db()
+init_users()
+
+# IMPORTA LOGIN DEPOIS
 from modulos.login import show_login
 
 from utils.styles import load_css
-
-from modulos.login import show_login
 
 from modulos.dashboard import show_dashboard
 from modulos.produtos import show_produtos
@@ -20,7 +24,6 @@ from modulos.vendas import show_vendas
 from modulos.financeiro import show_financeiro
 from modulos.compras import show_compras
 from modulos.ajuda import show_ajuda
-from modulos.configuracoes import show_config
 
 # CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(
