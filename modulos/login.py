@@ -5,20 +5,6 @@ import pandas as pd
 from database.db import users_conn
 
 
-c = users_conn()
-
-user = pd.read_sql_query(
-    """
-    SELECT *
-    FROM usuarios
-    WHERE usuario = ?
-    """,
-    c,
-    params=(usuario,)
-)
-
-c.close()
-
 def show_login():
 
     st.markdown(
@@ -49,14 +35,25 @@ def show_login():
 
             c = users_conn()
 
-            user = pd.read_sql_query(
-                """
-                SELECT * FROM usuarios
-                WHERE usuario = ?
-                """,
-                c,
-                params=(usuario,)
-            )
+            try:
+
+                user = pd.read_sql_query(
+                    """
+                    SELECT *
+                    FROM usuarios
+                    WHERE usuario = ?
+                    """,
+                    c,
+                    params=(usuario,)
+                )
+
+            except Exception as e:
+
+                st.error(f"Erro banco usuários: {e}")
+
+                c.close()
+
+                return
 
             c.close()
 
@@ -76,6 +73,10 @@ def show_login():
                 st.session_state["logado"] = True
 
                 st.session_state["usuario"] = usuario
+
+                st.session_state["trocar_senha"] = (
+                    user.iloc[0]["trocar_senha"]
+                )
 
                 st.rerun()
 
