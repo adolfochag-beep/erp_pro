@@ -96,34 +96,45 @@ def execute(sql, params=()):
     c.close()
 
 # =========================
-# INIT USUARIOS
+# BANCO USUÁRIOS
 # =========================
+
+def users_conn():
+
+    return sqlite3.connect(
+        "usuarios.db",
+        check_same_thread=False
+    )
+
 
 def init_users():
 
     import bcrypt
 
-    c = sqlite3.connect("usuarios.db")
+    c = users_conn()
 
     cur = c.cursor()
 
+    # TABELA USUÁRIOS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS usuarios(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         usuario TEXT UNIQUE,
-        senha TEXT
+        senha TEXT,
+        trocar_senha INTEGER DEFAULT 1
     )
     """)
 
-    # VERIFICA SE ADMIN EXISTE
-    cur.execute(
-        "SELECT * FROM usuarios WHERE usuario = ?",
-        ("admin",)
-    )
+    # VERIFICA ADMIN
+    cur.execute("""
+    SELECT *
+    FROM usuarios
+    WHERE usuario = ?
+    """, ("admin",))
 
     admin = cur.fetchone()
 
-    # SE NÃO EXISTIR -> CRIA
+    # CRIA ADMIN SE NÃO EXISTIR
     if not admin:
 
         senha = bcrypt.hashpw(
@@ -134,12 +145,14 @@ def init_users():
         cur.execute("""
         INSERT INTO usuarios(
             usuario,
-            senha
+            senha,
+            trocar_senha
         )
-        VALUES(?,?)
+        VALUES(?,?,?)
         """, (
             "admin",
-            senha
+            senha,
+            1
         ))
 
     c.commit()
