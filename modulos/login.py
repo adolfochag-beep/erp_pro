@@ -3,7 +3,7 @@ import bcrypt
 import pandas as pd
 
 from database.db import users_conn
-from database.db import users_conn
+
 
 c = users_conn()
 
