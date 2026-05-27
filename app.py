@@ -24,6 +24,7 @@ from modulos.vendas import show_vendas
 from modulos.financeiro import show_financeiro
 from modulos.compras import show_compras
 from modulos.ajuda import show_ajuda
+from configuracoes import show_config
 
 # CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(
