@@ -4,6 +4,10 @@ import os
 import streamlit as st
 import bcrypt
 
+# =========================
+# BASE
+# =========================
+
 BASE_DIR = os.path.dirname(
     os.path.dirname(
         os.path.abspath(__file__)
@@ -21,7 +25,7 @@ os.makedirs(
 )
 
 # =========================
-# BANCO CENTRAL USUÁRIOS
+# BANCO USUÁRIOS
 # =========================
 
 USERS_DB = os.path.join(
@@ -37,7 +41,7 @@ def users_conn():
     )
 
 # =========================
-# BANCO DO USUÁRIO
+# BANCO ERP USUÁRIO
 # =========================
 
 def get_user_db():
@@ -96,26 +100,16 @@ def execute(sql, params=()):
     c.close()
 
 # =========================
-# BANCO USUÁRIOS
+# INIT USERS
 # =========================
 
-def users_conn():
-
-    return sqlite3.connect(
-        "usuarios.db",
-        check_same_thread=False
-    )
-
-
 def init_users():
-
-    import bcrypt
 
     c = users_conn()
 
     cur = c.cursor()
 
-    # TABELA USUÁRIOS
+    # TABELA
     cur.execute("""
     CREATE TABLE IF NOT EXISTS usuarios(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -124,17 +118,18 @@ def init_users():
         trocar_senha INTEGER DEFAULT 1
     )
     """)
+
     # GARANTE COLUNA NOVA
-try:
+    try:
 
-    cur.execute("""
-    ALTER TABLE usuarios
-    ADD COLUMN trocar_senha INTEGER DEFAULT 1
-    """)
+        cur.execute("""
+        ALTER TABLE usuarios
+        ADD COLUMN trocar_senha INTEGER DEFAULT 1
+        """)
 
-except:
+    except:
 
-    pass
+        pass
 
     # VERIFICA ADMIN
     cur.execute("""
@@ -145,7 +140,7 @@ except:
 
     admin = cur.fetchone()
 
-    # CRIA ADMIN SE NÃO EXISTIR
+    # CRIA ADMIN
     if not admin:
 
         senha = bcrypt.hashpw(
@@ -216,7 +211,7 @@ def init_db():
     )
     """)
 
-    # PRODUCOES
+    # PRODUÇÕES
     cur.execute("""
     CREATE TABLE IF NOT EXISTS producoes(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
