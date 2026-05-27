@@ -4,6 +4,10 @@ import os
 import streamlit as st
 import bcrypt
 
+# =========================
+# BASE
+# =========================
+
 BASE_DIR = os.path.dirname(
     os.path.dirname(
         os.path.abspath(__file__)
@@ -21,7 +25,7 @@ os.makedirs(
 )
 
 # =========================
-# BANCO CENTRAL USUÁRIOS
+# BANCO USUÁRIOS
 # =========================
 
 USERS_DB = os.path.join(
@@ -37,7 +41,7 @@ def users_conn():
     )
 
 # =========================
-# BANCO DO USUÁRIO
+# BANCO ERP USUÁRIO
 # =========================
 
 def get_user_db():
@@ -96,34 +100,47 @@ def execute(sql, params=()):
     c.close()
 
 # =========================
-# INIT USUARIOS
+# INIT USERS
 # =========================
 
 def init_users():
 
-    import bcrypt
-
-    c = sqlite3.connect("usuarios.db")
+    c = users_conn()
 
     cur = c.cursor()
 
+    # TABELA
     cur.execute("""
     CREATE TABLE IF NOT EXISTS usuarios(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         usuario TEXT UNIQUE,
-        senha TEXT
+        senha TEXT,
+        trocar_senha INTEGER DEFAULT 1
     )
     """)
 
-    # VERIFICA SE ADMIN EXISTE
-    cur.execute(
-        "SELECT * FROM usuarios WHERE usuario = ?",
-        ("admin",)
-    )
+    # GARANTE COLUNA NOVA
+    try:
+
+        cur.execute("""
+        ALTER TABLE usuarios
+        ADD COLUMN trocar_senha INTEGER DEFAULT 1
+        """)
+
+    except:
+
+        pass
+
+    # VERIFICA ADMIN
+    cur.execute("""
+    SELECT *
+    FROM usuarios
+    WHERE usuario = ?
+    """, ("admin",))
 
     admin = cur.fetchone()
 
-    # SE NÃO EXISTIR -> CRIA
+    # CRIA ADMIN
     if not admin:
 
         senha = bcrypt.hashpw(
@@ -134,12 +151,14 @@ def init_users():
         cur.execute("""
         INSERT INTO usuarios(
             usuario,
-            senha
+            senha,
+            trocar_senha
         )
-        VALUES(?,?)
+        VALUES(?,?,?)
         """, (
             "admin",
-            senha
+            senha,
+            1
         ))
 
     c.commit()
@@ -192,7 +211,7 @@ def init_db():
     )
     """)
 
-    # PRODUCOES
+    # PRODUÇÕES
     cur.execute("""
     CREATE TABLE IF NOT EXISTS producoes(
         id INTEGER PRIMARY KEY AUTOINCREMENT,

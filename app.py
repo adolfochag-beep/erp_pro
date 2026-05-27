@@ -6,9 +6,15 @@ from database.db import (
     init_db,
     init_users
 )
-from utils.styles import load_css
 
+# INICIALIZA BANCOS PRIMEIRO
+init_db()
+init_users()
+
+# IMPORTA LOGIN DEPOIS
 from modulos.login import show_login
+
+from utils.styles import load_css
 
 from modulos.dashboard import show_dashboard
 from modulos.produtos import show_produtos
