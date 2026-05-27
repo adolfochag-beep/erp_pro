@@ -1,18 +1,38 @@
 import streamlit as st
 
+from backup import gerar_backup
+
 
 def show_config():
 
     st.title("⚙️ Configurações")
 
-    st.subheader("Perfil")
+    st.subheader("🏢 Empresa")
 
-    st.info("Área de configurações do ERP")
+    st.text_input(
+        "Nome da Empresa"
+    )
 
-    st.text_input("Nome da empresa")
+    st.text_input(
+        "Telefone"
+    )
 
-    st.text_input("Email")
+    st.text_input(
+        "Email"
+    )
 
-    st.text_input("Telefone")
+    st.divider()
 
-    st.button("Salvar alterações")
+    # =========================
+    # BACKUP
+    # =========================
+
+    st.subheader("💾 Backup")
+
+    if st.button("Gerar Backup"):
+
+        pasta = gerar_backup()
+
+        st.success(
+            f"Backup criado: {pasta}"
+        )
