@@ -1,31 +1,18 @@
 import streamlit as st
-import bcrypt
 
-from database.db import execute
 
 def show_config():
 
     st.title("⚙️ Configurações")
 
-    nova = st.text_input(
-        "Nova senha",
-        type="password"
-    )
+    st.subheader("Perfil")
 
-    if st.button("Alterar senha"):
+    st.info("Área de configurações do ERP")
 
-        senha_hash = bcrypt.hashpw(
-            nova.encode(),
-            bcrypt.gensalt()
-        ).decode()
+    st.text_input("Nome da empresa")
 
-        execute("""
-        UPDATE usuarios
-        SET senha = ?
-        WHERE usuario = ?
-        """, (
-            senha_hash,
-            st.session_state["usuario"]
-        ))
+    st.text_input("Email")
 
-        st.success("Senha alterada")
+    st.text_input("Telefone")
+
+    st.button("Salvar alterações")
