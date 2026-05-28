@@ -1,38 +1,58 @@
 import streamlit as st
-
-from backup import gerar_backup
+import bcrypt
+from database.db import query, execute
 
 
 def show_config():
 
     st.title("⚙️ Configurações")
 
-    st.subheader("🏢 Empresa")
+    st.subheader("🔐 Alterar Senha")
 
-    st.text_input(
-        "Nome da Empresa"
-    )
+    usuario = st.session_state.get("usuario")
 
-    st.text_input(
-        "Telefone"
-    )
+    with st.form("trocar_senha"):
 
-    st.text_input(
-        "Email"
-    )
+        senha_atual = st.text_input("Senha atual", type="password")
+        nova_senha = st.text_input("Nova senha", type="password")
+        confirmar = st.text_input("Confirmar nova senha", type="password")
 
-    st.divider()
+        salvar = st.form_submit_button("Salvar")
 
-    # =========================
-    # BACKUP
-    # =========================
+        if salvar:
 
-    st.subheader("💾 Backup")
+            dados = query(
+                "SELECT * FROM usuarios WHERE usuario=?",
+                (usuario,)
+            )
 
-    if st.button("Gerar Backup"):
+            if dados.empty:
+                st.error("Usuário não encontrado")
+                return
 
-        pasta = gerar_backup()
+            senha_hash = dados.iloc[0]["senha"]
 
-        st.success(
-            f"Backup criado: {pasta}"
-        )
+            # valida senha atual
+            if not bcrypt.checkpw(
+                senha_atual.encode(), senha_hash.encode()
+            ):
+                st.error("Senha atual incorreta")
+                return
+
+            # valida nova senha
+            if nova_senha != confirmar:
+                st.warning("Senhas não coincidem")
+                return
+
+            # grava nova senha
+            nova_hash = bcrypt.hashpw(
+                nova_senha.encode(),
+                bcrypt.gensalt()
+            ).decode()
+
+            execute(
+                "UPDATE usuarios SET senha=? WHERE usuario=?",
+                (nova_hash, usuario)
+            )
+
+            st.success("✅ Senha alterada com sucesso")
