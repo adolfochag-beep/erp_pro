@@ -1,12 +1,13 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 
+from modulos.login import show_login, limpar_sessao
+
 from database.db import (
     init_db,
     init_users
 )
 
-from modulos.login import show_login
 from utils.styles import load_css
 
 from modulos.dashboard import show_dashboard
@@ -18,6 +19,7 @@ from modulos.financeiro import show_financeiro
 from modulos.compras import show_compras
 from modulos.ajuda import show_ajuda
 from modulos.configuracoes import show_config
+
 
 # =========================
 # CONFIGURAÇÃO DA PÁGINA
@@ -39,18 +41,19 @@ init_users()
 load_css()
 
 # =========================
-# CONTROLE LOGIN
+# LOGIN (ÚNICO LUGAR)
 # =========================
 
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
+show_login()
+
 if not st.session_state["logado"]:
-    show_login()
     st.stop()
 
 # =========================
-# HEADER (BARRA SUPERIOR)
+# HEADER
 # =========================
 
 col_logo, col_user = st.columns([8, 2])
@@ -64,7 +67,7 @@ with col_user:
 st.divider()
 
 # =========================
-# MENU PRINCIPAL PREMIUM
+# MENU PRINCIPAL
 # =========================
 
 menu = option_menu(
@@ -105,8 +108,6 @@ menu = option_menu(
         "nav-link": {
             "font-size": "14px",
             "text-align": "center",
-            "margin": "0px",
-            "--hover-color": "#e9ecef",
         },
         "nav-link-selected": {
             "background-color": "#0d6efd",
@@ -118,7 +119,7 @@ menu = option_menu(
 st.markdown("<br>", unsafe_allow_html=True)
 
 # =========================
-# SIDEBAR PREMIUM (APOIO)
+# SIDEBAR
 # =========================
 
 with st.sidebar:
@@ -131,10 +132,11 @@ with st.sidebar:
 
     if st.button("🚪 Sair", use_container_width=True):
         st.session_state["logado"] = False
+        limpar_sessao()   # ✅ CORRETO
         st.rerun()
 
 # =========================
-# ROTAS DOS MÓDULOS
+# ROTAS
 # =========================
 
 if menu == "Dashboard":
