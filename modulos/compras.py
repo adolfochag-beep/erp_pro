@@ -10,13 +10,12 @@ def show_compras():
     df = query("""
     SELECT *,
         (estoque_min - estoque) AS comprar,
-        (estoque_min - estoque) * custo AS custo_total
+        COALESCE(custo, 0) * (estoque_min - estoque) AS custo_total
     FROM produtos
     WHERE estoque <= estoque_min
     """)
 
     if df.empty:
-
         st.success("✅ Estoque OK")
         return
 
@@ -26,11 +25,11 @@ def show_compras():
 
     df["comprar"] = df["comprar"].clip(lower=0)
 
-    # prioridade (mais crítico primeiro)
+    # ordena por criticidade
     df = df.sort_values(by="estoque")
 
     # =========================
-    # KPI (VALOR TOTAL)
+    # KPI
     # =========================
 
     total_compra = df["custo_total"].sum()
@@ -43,7 +42,7 @@ def show_compras():
     st.warning("Itens para reposição")
 
     # =========================
-    # DESTACAR CRÍTICO
+    # VISUAL
     # =========================
 
     def highlight(row):
@@ -51,16 +50,14 @@ def show_compras():
             return ['background-color: #ff4d4f; color: white'] * len(row)
         return ['background-color: #fff3cd'] * len(row)
 
-    # formatação dinheiro
-    df["custo_total"] = df["custo_total"].apply(lambda x: f"R$ {x:,.2f}")
+    # evita erro de tipo
+    df["custo_total"] = pd.to_numeric(df["custo_total"], errors="coerce").fillna(0)
 
-    # =========================
-    # TABELA MELHORADA
-    # =========================
+    # formata moeda
+    df["custo_total"] = df["custo_total"].apply(lambda x: f"R$ {x:,.2f}")
 
     st.dataframe(
         df.style.apply(highlight, axis=1),
         use_container_width=True,
         height=400
     )
-``
