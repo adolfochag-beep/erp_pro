@@ -1,97 +1,197 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
 from database.db import query
 
-from utils.grid import tabela
 
 def show_dashboard():
 
     st.title("📊 Dashboard Executivo")
 
-    vendas = query(
-        "SELECT * FROM vendas"
-    )
+    # =========================
+    # DADOS
+    # =========================
 
-    produtos = query(
-        "SELECT * FROM produtos"
-    )
+    vendas = query("""
+    SELECT *
+    FROM vendas
+    """)
 
-    faturamento = (
-        vendas["total"].sum()
-        if not vendas.empty
-        else 0
-    )
+    produtos = query("""
+    SELECT *
+    FROM produtos
+    """)
 
-    lucro = (
-        vendas["lucro"].sum()
-        if not vendas.empty
-        else 0
-    )
+    financeiro = query("""
+    SELECT *
+    FROM financeiro
+    """)
 
-    qtd_vendas = len(vendas)
+    # =========================
+    # KPIs
+    # =========================
 
-    ticket = (
-        faturamento / qtd_vendas
-        if qtd_vendas > 0
-        else 0
-    )
-
-    estoque_baixo = produtos[
-        produtos["estoque"] <= produtos["estoque_min"]
-    ]
-
-    c1, c2, c3, c4 = st.columns(4)
-
-    c1.metric(
-        "💰 Faturamento",
-        f"R$ {faturamento:,.2f}"
-    )
-
-    c2.metric(
-        "📈 Lucro",
-        f"R$ {lucro:,.2f}"
-    )
-
-    c3.metric(
-        "🧾 Ticket Médio",
-        f"R$ {ticket:,.2f}"
-    )
-
-    c4.metric(
-        "⚠️ Estoque Baixo",
-        len(estoque_baixo)
-    )
-
-    st.divider()
+    faturamento = 0
+    lucro = 0
+    total_produtos = 0
+    estoque_baixo = 0
 
     if not vendas.empty:
 
-        vendas["data"] = pd.to_datetime(
-            vendas["data"]
+        faturamento = vendas["total"].sum()
+
+        lucro = vendas["lucro"].sum()
+
+    if not produtos.empty:
+
+        total_produtos = len(produtos)
+
+        estoque_baixo = len(
+            produtos[
+                produtos["estoque"]
+                <=
+                produtos["estoque_min"]
+            ]
         )
 
-        grafico = vendas.groupby(
-            vendas["data"].dt.date
-        )["total"].sum().reset_index()
+    # =========================
+    # CARDS
+    # =========================
 
-        fig = px.line(
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+
+        st.metric(
+            "💰 Faturamento",
+            f"R$ {faturamento:,.2f}"
+        )
+
+    with col2:
+
+        st.metric(
+            "📈 Lucro",
+            f"R$ {lucro:,.2f}"
+        )
+
+    with col3:
+
+        st.metric(
+            "📦 Produtos",
+            total_produtos
+        )
+
+    with col4:
+
+        st.metric(
+            "⚠️ Estoque Baixo",
+            estoque_baixo
+        )
+
+    st.divider()
+
+    # =========================
+    # GRÁFICO VENDAS
+    # =========================
+
+    st.subheader("📈 Vendas por Produto")
+
+    if not vendas.empty:
+
+        grafico = (
+            vendas
+            .groupby("produto")["total"]
+            .sum()
+            .reset_index()
+        )
+
+        st.bar_chart(
             grafico,
-            x="data",
+            x="produto",
             y="total",
-            title="Vendas por Dia"
-        )
-
-        st.plotly_chart(
-            fig,
             use_container_width=True
         )
 
-    if not estoque_baixo.empty:
+    else:
 
-        st.warning(
-            "Produtos com estoque baixo"
+        st.info(
+            "Sem vendas registradas"
         )
 
-        tabela(estoque_baixo)
+    # =========================
+    # ESTOQUE CRÍTICO
+    # =========================
+
+    st.divider()
+
+    st.subheader("⚠️ Estoque Crítico")
+
+    if not produtos.empty:
+
+        criticos = produtos[
+            produtos["estoque"]
+            <=
+            produtos["estoque_min"]
+        ]
+
+        if not criticos.empty:
+
+            st.dataframe(
+                criticos,
+                use_container_width=True
+            )
+
+        else:
+
+            st.success(
+                "Nenhum produto crítico"
+            )
+
+    # =========================
+    # FINANCEIRO
+    # =========================
+
+    st.divider()
+
+    st.subheader("💰 Resumo Financeiro")
+
+    if not financeiro.empty:
+
+        entradas = financeiro[
+            financeiro["tipo"] == "Entrada"
+        ]["valor"].sum()
+
+        saidas = financeiro[
+            financeiro["tipo"] == "Saída"
+        ]["valor"].sum()
+
+        saldo = entradas - saidas
+
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+
+            st.metric(
+                "Entradas",
+                f"R$ {entradas:,.2f}"
+            )
+
+        with c2:
+
+            st.metric(
+                "Saídas",
+                f"R$ {saidas:,.2f}"
+            )
+
+        with c3:
+
+            st.metric(
+                "Saldo",
+                f"R$ {saldo:,.2f}"
+            )
+
+    else:
+
+        st.info(
+            "Sem movimentações financeiras"
+        )
