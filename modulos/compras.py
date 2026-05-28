@@ -5,7 +5,7 @@ from database.db import query
 
 def show_compras():
 
-    st.title("⚠️ Lista de Compras")
+    st.title("⚠️ Lista de Compras Inteligente")
 
     df = query("""
     SELECT *,
@@ -16,7 +16,7 @@ def show_compras():
     """)
 
     if df.empty:
-        st.success("✅ Estoque OK")
+        st.success("✅ Estoque OK — nenhum item precisa de reposição")
         return
 
     # =========================
@@ -24,40 +24,69 @@ def show_compras():
     # =========================
 
     df["comprar"] = df["comprar"].clip(lower=0)
-
-    # ordena por criticidade
-    df = df.sort_values(by="estoque")
+    df = df.sort_values(by="estoque")  # mais crítico primeiro
 
     # =========================
-    # KPI
+    # KPIs
     # =========================
 
-    total_compra = df["custo_total"].sum()
+    total_itens = len(df)
+    custo_total = df["custo_total"].sum()
 
-    st.metric(
-        "💰 Custo estimado de reposição",
-        f"R$ {total_compra:,.2f}"
+    c1, c2 = st.columns(2)
+
+    c1.metric("Itens para comprar", total_itens)
+    c2.metric("💰 Custo estimado", f"R$ {custo_total:,.2f}")
+
+    st.divider()
+
+    # =========================
+    # FILTRO
+    # =========================
+
+    filtro_tipo = st.selectbox(
+        "Filtrar por tipo",
+        ["Todos"] + list(df["tipo"].dropna().unique())
     )
 
-    st.warning("Itens para reposição")
+    if filtro_tipo != "Todos":
+        df = df[df["tipo"] == filtro_tipo]
 
     # =========================
-    # VISUAL
+    # HIGHLIGHT
     # =========================
 
-    def highlight(row):
+    def destaque(row):
         if row["estoque"] == 0:
             return ['background-color: #ff4d4f; color: white'] * len(row)
         return ['background-color: #fff3cd'] * len(row)
 
-    # evita erro de tipo
+    # formatação monetária segura
     df["custo_total"] = pd.to_numeric(df["custo_total"], errors="coerce").fillna(0)
-
-    # formata moeda
     df["custo_total"] = df["custo_total"].apply(lambda x: f"R$ {x:,.2f}")
 
+    # =========================
+    # TABELA PROFISSIONAL
+    # =========================
+
+    st.subheader("📋 Itens a Comprar")
+
     st.dataframe(
-        df.style.apply(highlight, axis=1),
+        df.style.apply(destaque, axis=1),
         use_container_width=True,
         height=400
     )
+
+    # =========================
+    # RESUMO GERENCIAL
+    # =========================
+
+    st.divider()
+
+    st.subheader("📊 Resumo")
+
+    resumo = df.groupby("tipo")["custo_total"].count().reset_index()
+    resumo.columns = ["Tipo", "Qtd Itens"]
+
+    st.dataframe(resumo, use_container_width=True)
+``
