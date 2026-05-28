@@ -1,50 +1,201 @@
 import streamlit as st
-import os
 import bcrypt
-from database.db import query
+import pandas as pd
 
-SESSION_FILE = "session_login.txt"
+from database.db import (
+    users_conn,
+    init_db
+)
 
-def salvar_sessao(usuario):
-    with open(SESSION_FILE, "w") as f:
-        f.write(usuario)
 
-def carregar_sessao():
-    if os.path.exists(SESSION_FILE):
-        with open(SESSION_FILE, "r") as f:
-            return f.read()
-    return None
+def criar_usuario(usuario, senha):
 
-def limpar_sessao():
-    if os.path.exists(SESSION_FILE):
-        os.remove(SESSION_FILE)
+    c = users_conn()
+
+    cur = c.cursor()
+
+    senha_hash = bcrypt.hashpw(
+        senha.encode(),
+        bcrypt.gensalt()
+    ).decode()
+
+    try:
+
+        cur.execute("""
+        INSERT INTO usuarios(
+            usuario,
+            senha,
+            trocar_senha
+        )
+        VALUES(?,?,?)
+        """, (
+            usuario,
+            senha_hash,
+            0
+        ))
+
+        c.commit()
+
+        c.close()
+
+        return True
+
+    except:
+
+        c.close()
+
+        return False
+
 
 def show_login():
 
-    usuario_salvo = carregar_sessao()
+    st.markdown("""
+    <div style='text-align:center;padding-top:40px;'>
 
-    if usuario_salvo:
-        st.session_state["logado"] = True
-        st.session_state["usuario"] = usuario_salvo
-        return
+    <h1>🚀 ERP PRO MAX</h1>
 
-    st.title("🔐 Login")
+    <p>Sistema de Gestão Empresarial</p>
 
-    with st.form("login"):
-        user = st.text_input("Usuário")
-        senha = st.text_input("Senha", type="password")
+    </div>
+    """, unsafe_allow_html=True)
 
-        if st.form_submit_button("Entrar"):
+    abas = st.tabs([
+        "🔐 Login",
+        "📝 Criar Conta"
+    ])
 
-            dados = query("SELECT * FROM usuarios WHERE usuario=?", (user,))
+    # =========================
+    # LOGIN
+    # =========================
 
-            if not dados.empty:
-                senha_hash = dados.iloc[0]["senha"]
+    with abas[0]:
 
-                if bcrypt.checkpw(senha.encode(), senha_hash.encode()):
-                    st.session_state["logado"] = True
-                    st.session_state["usuario"] = user
-                    salvar_sessao(user)
-                    st.rerun()
+        usuario = st.text_input(
+            "Usuário",
+            key="login_user"
+        )
 
-            st.error("Login inválido")
+        senha = st.text_input(
+            "Senha",
+            type="password",
+            key="login_pass"
+        )
+
+        if st.button(
+            "Entrar"
+        ):
+
+            c = users_conn()
+
+            user = pd.read_sql_query(
+                """
+                SELECT *
+                FROM usuarios
+                WHERE usuario = ?
+                """,
+                c,
+                params=(usuario,)
+            )
+
+            c.close()
+
+            if user.empty:
+
+                st.error(
+                    "Usuário inválido"
+                )
+
+                return
+
+            senha_hash = user.iloc[0]["senha"]
+
+            if bcrypt.checkpw(
+                senha.encode(),
+                senha_hash.encode()
+            ):
+
+                st.session_state["logado"] = True
+
+                st.session_state["usuario"] = usuario
+
+                # CRIA BANCO AUTOMÁTICO
+                init_db()
+
+                st.success(
+                    "Login realizado"
+                )
+
+                st.rerun()
+
+            else:
+
+                st.error(
+                    "Senha incorreta"
+                )
+
+    # =========================
+    # CADASTRO
+    # =========================
+
+    with abas[1]:
+
+        novo_usuario = st.text_input(
+            "Novo Usuário"
+        )
+
+        nova_senha = st.text_input(
+            "Nova Senha",
+            type="password"
+        )
+
+        confirmar = st.text_input(
+            "Confirmar Senha",
+            type="password"
+        )
+
+        if st.button(
+            "Criar Conta"
+        ):
+
+            if not novo_usuario:
+
+                st.warning(
+                    "Informe usuário"
+                )
+
+                return
+
+            if len(nova_senha) < 4:
+
+                st.warning(
+                    "Senha muito curta"
+                )
+
+                return
+
+            if nova_senha != confirmar:
+
+                st.error(
+                    "Senhas diferentes"
+                )
+
+                return
+
+            criado = criar_usuario(
+                novo_usuario,
+                nova_senha
+            )
+
+            if criado:
+
+                st.success("""
+                Conta criada com sucesso.
+
+                Agora faça login.
+                """)
+
+            else:
+
+                st.error("""
+                Usuário já existe
+                """)
