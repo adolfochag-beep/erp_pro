@@ -1,5 +1,4 @@
 import streamlit as st
-
 from streamlit_option_menu import option_menu
 
 from database.db import (
@@ -7,13 +6,7 @@ from database.db import (
     init_users
 )
 
-# INICIALIZA BANCOS PRIMEIRO
-init_db()
-init_users()
-
-# IMPORTA LOGIN DEPOIS
 from modulos.login import show_login
-
 from utils.styles import load_css
 
 from modulos.dashboard import show_dashboard
@@ -26,115 +19,147 @@ from modulos.compras import show_compras
 from modulos.ajuda import show_ajuda
 from modulos.configuracoes import show_config
 
+# =========================
 # CONFIGURAÇÃO DA PÁGINA
+# =========================
+
 st.set_page_config(
     page_title="ERP PRO MAX",
     layout="wide",
-    page_icon="📊"
+    page_icon="📊",
+    initial_sidebar_state="expanded"
 )
 
-# CARREGA CSS
-load_css()
+# =========================
+# INICIALIZAÇÃO
+# =========================
 
-# INICIA BANCO
 init_db()
-
-# CONTROLE LOGIN
+init_users()
 load_css()
 
-init_users()
-if "logado" not in st.session_state:
+# =========================
+# CONTROLE LOGIN
+# =========================
 
+if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
-# LOGIN
 if not st.session_state["logado"]:
-
     show_login()
-
     st.stop()
 
-# CRIA BANCO DO USUÁRIO
-init_db()
+# =========================
+# HEADER (BARRA SUPERIOR)
+# =========================
 
-# SIDEBAR
-with st.sidebar:
+col_logo, col_user = st.columns([8, 2])
 
+with col_logo:
     st.markdown("## 🚀 ERP PRO MAX")
 
-    st.caption(
-        f"Usuário: {st.session_state['usuario']}"
-    )
+with col_user:
+    st.markdown(f"👤 **{st.session_state['usuario']}**")
 
-    menu = option_menu(
-        "",
-        [
-            "Dashboard",
-            "Produtos",
-            "Receitas",
-            "Produção",
-            "Vendas",
-            "Financeiro",
-            "Compras",
-            "Configurações",
-            "Ajuda"
-        ],
-        icons=[
-            "speedometer2",
-            "box-seam",
-            "journal-text",
-            "gear-wide-connected",
-            "cart-fill",
-            "cash-stack",
-            "truck",
-            "gear",
-            "question-circle"
-        ],
-        default_index=0
-    )
+st.divider()
+
+# =========================
+# MENU PRINCIPAL PREMIUM
+# =========================
+
+menu = option_menu(
+    None,
+    [
+        "Dashboard",
+        "Produtos",
+        "Receitas",
+        "Produção",
+        "Vendas",
+        "Financeiro",
+        "Compras",
+        "Configurações",
+        "Ajuda"
+    ],
+    icons=[
+        "speedometer2",
+        "box-seam",
+        "journal-text",
+        "gear-wide-connected",
+        "cart-fill",
+        "cash-stack",
+        "truck",
+        "gear",
+        "question-circle"
+    ],
+    orientation="horizontal",
+    styles={
+        "container": {
+            "padding": "5px",
+            "background-color": "#f8f9fa",
+            "border-radius": "10px"
+        },
+        "icon": {
+            "font-size": "16px",
+            "color": "#0d6efd"
+        },
+        "nav-link": {
+            "font-size": "14px",
+            "text-align": "center",
+            "margin": "0px",
+            "--hover-color": "#e9ecef",
+        },
+        "nav-link-selected": {
+            "background-color": "#0d6efd",
+            "color": "white",
+        },
+    }
+)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# =========================
+# SIDEBAR PREMIUM (APOIO)
+# =========================
+
+with st.sidebar:
+
+    st.markdown("### ⚙️ Painel")
+
+    st.info(f"Logado como:\n**{st.session_state['usuario']}**")
 
     st.divider()
 
-    if st.button("Sair"):
-
+    if st.button("🚪 Sair", use_container_width=True):
         st.session_state["logado"] = False
-
         st.rerun()
 
+# =========================
 # ROTAS DOS MÓDULOS
+# =========================
 
 if menu == "Dashboard":
-
     show_dashboard()
 
 elif menu == "Produtos":
-
     show_produtos()
 
 elif menu == "Receitas":
-
     show_receitas()
 
 elif menu == "Produção":
-
     show_producao()
 
 elif menu == "Vendas":
-
     show_vendas()
 
 elif menu == "Financeiro":
-
     show_financeiro()
 
 elif menu == "Compras":
-
     show_compras()
 
 elif menu == "Configurações":
-
     show_config()
 
 elif menu == "Ajuda":
-
     show_ajuda()
