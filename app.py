@@ -33,7 +33,7 @@ st.set_page_config(
 )
 
 # =========================
-# INICIALIZAÇÃO
+# INICIALIZAÇÃO (BANCO PRIMEIRO)
 # =========================
 
 init_db()
@@ -41,7 +41,7 @@ init_users()
 load_css()
 
 # =========================
-# LOGIN (ÚNICO LUGAR)
+# LOGIN (CENTRAL)
 # =========================
 
 if "logado" not in st.session_state:
@@ -62,7 +62,8 @@ with col_logo:
     st.markdown("## 🚀 ERP PRO MAX")
 
 with col_user:
-    st.markdown(f"👤 **{st.session_state['usuario']}**")
+    usuario = st.session_state.get("usuario", "Usuário")
+    st.markdown(f"👤 **{usuario}**")
 
 st.divider()
 
@@ -126,13 +127,13 @@ with st.sidebar:
 
     st.markdown("### ⚙️ Painel")
 
-    st.info(f"Logado como:\n**{st.session_state['usuario']}**")
+    st.info(f"Logado como:\n**{st.session_state.get('usuario', 'Usuário')}**")
 
     st.divider()
 
     if st.button("🚪 Sair", use_container_width=True):
         st.session_state["logado"] = False
-        limpar_sessao()   # ✅ CORRETO
+        limpar_sessao()
         st.rerun()
 
 # =========================
