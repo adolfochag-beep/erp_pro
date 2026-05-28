@@ -5,23 +5,19 @@ from database.db import query
 
 SESSION_FILE = "session_login.txt"
 
-
 def salvar_sessao(usuario):
     with open(SESSION_FILE, "w") as f:
         f.write(usuario)
 
-
 def carregar_sessao():
     if os.path.exists(SESSION_FILE):
         with open(SESSION_FILE, "r") as f:
-            return f.read().strip()
+            return f.read()
     return None
-
 
 def limpar_sessao():
     if os.path.exists(SESSION_FILE):
         os.remove(SESSION_FILE)
-
 
 def show_login():
 
@@ -32,40 +28,23 @@ def show_login():
         st.session_state["usuario"] = usuario_salvo
         return
 
-    col1, col2, col3 = st.columns([1, 1.2, 1])
+    st.title("🔐 Login")
 
-    with col2:
-        st.title("🔐 ERP PRO MAX")
+    with st.form("login"):
+        user = st.text_input("Usuário")
+        senha = st.text_input("Senha", type="password")
 
-        with st.form("login"):
+        if st.form_submit_button("Entrar"):
 
-            usuario = st.text_input("Usuário")
-            senha = st.text_input("Senha", type="password")
+            dados = query("SELECT * FROM usuarios WHERE usuario=?", (user,))
 
-            entrar = st.form_submit_button("Entrar")
+            if not dados.empty:
+                senha_hash = dados.iloc[0]["senha"]
 
-            if entrar:
+                if bcrypt.checkpw(senha.encode(), senha_hash.encode()):
+                    st.session_state["logado"] = True
+                    st.session_state["usuario"] = user
+                    salvar_sessao(user)
+                    st.rerun()
 
-                if not usuario or not senha:
-                    st.warning("Informe usuário e senha")
-                    return
-
-                dados = query(
-                    "SELECT * FROM usuarios WHERE usuario=?",
-                    (usuario,)
-                )
-
-                if not dados.empty:
-
-                    senha_hash = dados.iloc[0]["senha"]
-
-                    if bcrypt.checkpw(senha.encode(), senha_hash.encode()):
-
-                        st.session_state["logado"] = True
-                        st.session_state["usuario"] = usuario
-
-                        salvar_sessao(usuario)
-
-                        st.rerun()
-
-                st.error("Usuário ou senha inválidos")
+            st.error("Login inválido")
