@@ -7,52 +7,111 @@ def show_config():
 
     st.title("⚙️ Configurações")
 
-    st.subheader("🔐 Alterar Senha")
+    # =========================
+    # ABAS
+    # =========================
 
-    usuario = st.session_state.get("usuario")
+    aba1, aba2 = st.tabs([
+        "🔐 Segurança",
+        "🧾 Sistema"
+    ])
 
-    with st.form("trocar_senha"):
+    # =========================
+    # SENHAS
+    # =========================
 
-        senha_atual = st.text_input("Senha atual", type="password")
-        nova_senha = st.text_input("Nova senha", type="password")
-        confirmar = st.text_input("Confirmar nova senha", type="password")
+    with aba1:
 
-        salvar = st.form_submit_button("Salvar")
+        st.subheader("🔑 Alterar Senha")
 
-        if salvar:
+        usuario = st.session_state.get("usuario")
 
-            dados = query(
-                "SELECT * FROM usuarios WHERE usuario=?",
-                (usuario,)
-            )
+        with st.form("trocar_senha"):
 
-            if dados.empty:
-                st.error("Usuário não encontrado")
-                return
+            senha_atual = st.text_input("Senha atual", type="password")
+            nova_senha = st.text_input("Nova senha", type="password")
+            confirmar = st.text_input("Confirmar nova senha", type="password")
 
-            senha_hash = dados.iloc[0]["senha"]
+            salvar = st.form_submit_button("Salvar")
 
-            # valida senha atual
-            if not bcrypt.checkpw(
-                senha_atual.encode(), senha_hash.encode()
-            ):
-                st.error("Senha atual incorreta")
-                return
+            if salvar:
 
-            # valida nova senha
-            if nova_senha != confirmar:
-                st.warning("Senhas não coincidem")
-                return
+                dados = query(
+                    "SELECT * FROM usuarios WHERE usuario=?",
+                    (usuario,)
+                )
 
-            # grava nova senha
-            nova_hash = bcrypt.hashpw(
-                nova_senha.encode(),
-                bcrypt.gensalt()
-            ).decode()
+                if dados.empty:
+                    st.error("Usuário não encontrado")
+                    return
 
-            execute(
-                "UPDATE usuarios SET senha=? WHERE usuario=?",
-                (nova_hash, usuario)
-            )
+                senha_hash = dados.iloc[0]["senha"]
 
-            st.success("✅ Senha alterada com sucesso")
+                # valida senha atual
+                if not bcrypt.checkpw(
+                    senha_atual.encode(),
+                    senha_hash.encode()
+                ):
+                    st.error("Senha atual incorreta")
+                    return
+
+                # valida nova senha
+                if nova_senha != confirmar:
+                    st.warning("Senhas não coincidem")
+                    return
+
+                if len(nova_senha) < 4:
+                    st.warning("Senha muito curta (mínimo 4 caracteres)")
+                    return
+
+                nova_hash = bcrypt.hashpw(
+                    nova_senha.encode(),
+                    bcrypt.gensalt()
+                ).decode()
+
+                execute(
+                    "UPDATE usuarios SET senha=? WHERE usuario=?",
+                    (nova_hash, usuario)
+                )
+
+                st.success("✅ Senha atualizada com sucesso")
+
+    # =========================
+    # CONFIGURACOES DO SISTEMA
+    # =========================
+
+    with aba2:
+
+        st.subheader("📌 Informações do Sistema")
+
+        st.info("""
+        ERP PRO MAX
+        
+        ✔ Controle de estoque  
+        ✔ Produção  
+        ✔ Vendas  
+        ✔ Financeiro  
+        ✔ Compras  
+        """)
+
+        st.divider()
+
+        st.subheader("💾 Backup")
+
+        if st.button("Gerar backup do banco"):
+            from datetime import datetime
+            import shutil
+
+            nome = datetime.now().strftime('%Y%m%d_%H%M%S')
+            arquivo = f'backup_{nome}.db'
+
+            shutil.copy("erp_v3.db", arquivo)
+
+            st.success("✅ Backup gerado com sucesso")
+
+            with open(arquivo, "rb") as f:
+                st.download_button(
+                    "📥 Baixar backup",
+                    f,
+                    file_name=arquivo
+                )
