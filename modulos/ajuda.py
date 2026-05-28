@@ -220,4 +220,4 @@ def show_ajuda():
         """)
 
         st.success("✅ Seguindo isso, seu ERP funciona como sistema profissional")
-``
+
