@@ -32,11 +32,11 @@ load_css()
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
-show_login()
-
 if not st.session_state["logado"]:
-    st.stop()
 
+    show_login()
+
+    st.stop()
 # HEADER
 col1, col2 = st.columns([8, 2])
 col1.markdown("## 🚀 ERP PRO MAX")
