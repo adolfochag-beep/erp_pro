@@ -1,7 +1,7 @@
 import streamlit as st
 import os
-from database.db import query
 import bcrypt
+from database.db import query
 
 SESSION_FILE = "session_login.txt"
 
@@ -32,9 +32,9 @@ def show_login():
         st.session_state["usuario"] = usuario_salvo
         return
 
-    c1, c2, c3 = st.columns([1, 1.2, 1])
+    col1, col2, col3 = st.columns([1, 1.2, 1])
 
-    with c2:
+    with col2:
         st.title("🔐 ERP PRO MAX")
 
         with st.form("login"):
