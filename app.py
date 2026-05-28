@@ -44,22 +44,86 @@ col2.markdown(f"👤 {st.session_state.get('usuario','')}")
 
 st.divider()
 
-# MENU
-menu = option_menu(
-    None,
-    ["Dashboard","Produtos","Receitas","Produção","Vendas","Financeiro","Compras","Configurações","Ajuda"],
-    icons=["speedometer2","box","book","gear","cart","cash","truck","gear","question"],
-    orientation="horizontal"
-)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
 # SIDEBAR
 with st.sidebar:
-    st.info(f"👤 {st.session_state.get('usuario','')}")
-    if st.button("🚪 Sair"):
+
+    st.markdown("""
+    <h2 style='text-align:center;color:#FFFFFF;'>
+    🚀 ERP PRO MAX
+    </h2>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    st.success(
+        f"👤 {st.session_state.get('usuario','')}"
+    )
+
+    menu = option_menu(
+        menu_title="MENU",
+        options=[
+            "Dashboard",
+            "Produtos",
+            "Receitas",
+            "Produção",
+            "Vendas",
+            "Financeiro",
+            "Compras",
+            "Configurações",
+            "Ajuda"
+        ],
+        icons=[
+            "speedometer2",
+            "box",
+            "book",
+            "gear",
+            "cart",
+            "cash",
+            "truck",
+            "sliders",
+            "question-circle"
+        ],
+        menu_icon="cast",
+        default_index=0,
+
+        styles={
+
+            "container": {
+                "padding": "5!important",
+                "background-color": "#111827",
+            },
+
+            "icon": {
+                "color": "#60A5FA",
+                "font-size": "18px"
+            },
+
+            "nav-link": {
+                "font-size": "15px",
+                "text-align": "left",
+                "margin":"3px",
+                "--hover-color": "#1F2937",
+                "border-radius": "10px",
+            },
+
+            "nav-link-selected": {
+                "background-color": "#2563EB",
+                "font-weight": "bold",
+            },
+        }
+    )
+
+    st.markdown("---")
+
+    if st.button(
+        "🚪 Sair",
+        use_container_width=True
+    ):
+
         st.session_state["logado"] = False
+
         limpar_sessao()
+
         st.rerun()
 
 # ROTAS
