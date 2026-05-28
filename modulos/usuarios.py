@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
-import bcrypt
 import plotly.express as px
 from datetime import datetime
 import shutil
@@ -51,72 +50,25 @@ def gerar_backup():
         st.download_button("📥 Baixar Backup", f, file_name=caminho)
 
 # =========================================================
-# LOGIN
-# =========================================================
-if 'logado' not in st.session_state:
-    st.session_state.logado = False
-
-if not st.session_state.logado:
-
-    c1, c2, c3 = st.columns([1,1.2,1])
-
-    with c2:
-        st.title("🔐 ERP Pro Max")
-
-        with st.form("login"):
-
-            usuario = st.text_input("Usuário")
-            senha = st.text_input("Senha", type="password")
-
-            if st.form_submit_button("Entrar"):
-
-                users = query(
-                    "SELECT * FROM usuarios WHERE usuario=?",
-                    (usuario,)
-                )
-
-                if not users.empty:
-                    senha_hash = users.iloc[0]['senha']
-
-                    if bcrypt.checkpw(senha.encode(), senha_hash.encode()):
-                        st.session_state.logado = True
-                        st.session_state.usuario = usuario
-                        st.rerun()
-
-                st.error("Usuário ou senha inválidos")
-
-    st.stop()
-
-# =========================================================
 # SIDEBAR
 # =========================================================
 with st.sidebar:
 
     st.markdown("## 🍞 ERP Pro Max")
-    st.write(f"👤 {st.session_state.usuario}")
+    st.write(f"👤 {st.session_state.get('usuario', 'Usuário')}")
 
     menu = st.radio(
         "Menu",
         [
             "📊 Dashboard",
             "📦 Produtos",
-            "🧪 Receita Técnica",
-            "🏭 Produção",
-            "🛒 Vendas",
-            "⚠️ Lista Compras",
             "💰 Financeiro",
-            "🔐 Alterar Senha",
-            "❓ Ajuda",
             "💾 Backup"
         ]
     )
 
-    if st.button("🚪 Sair", use_container_width=True):
-        st.session_state.logado = False
-        st.rerun()
-
 # =========================================================
-# DASHBOARD (MELHORADO)
+# DASHBOARD
 # =========================================================
 if "Dashboard" in menu:
 
@@ -161,7 +113,7 @@ if "Dashboard" in menu:
         st.plotly_chart(fig, use_container_width=True)
 
 # =========================================================
-# PRODUTOS (MELHORADO)
+# PRODUTOS
 # =========================================================
 elif "Produtos" in menu:
 
@@ -198,7 +150,7 @@ elif "Produtos" in menu:
         tabela(produtos)
 
 # =========================================================
-# FINANCEIRO (MELHORADO)
+# FINANCEIRO
 # =========================================================
 elif "Financeiro" in menu:
 
@@ -228,7 +180,7 @@ elif "Financeiro" in menu:
     tabela(fin)
 
 # =========================================================
-# BACKUP (MELHORADO)
+# BACKUP
 # =========================================================
 elif "Backup" in menu:
 
@@ -236,3 +188,4 @@ elif "Backup" in menu:
 
     if st.button("Gerar Backup"):
         gerar_backup()
+``
