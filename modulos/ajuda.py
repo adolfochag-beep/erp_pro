@@ -5,9 +5,21 @@ def show_ajuda():
 
     st.title("📚 Central de Ajuda ERP PRO MAX")
 
-    st.info(
-        "Manual completo de utilização do sistema"
-    )
+    st.info("Manual completo de utilização do sistema")
+
+    # =========================
+    # NAVEGAÇÃO RÁPIDA
+    # =========================
+
+    st.markdown("""
+    ### 🚀 Navegação rápida
+
+    1. Cadastre produtos  
+    2. Crie receitas  
+    3. Produza itens  
+    4. Realize vendas  
+    5. Controle financeiro  
+    """)
 
     abas = st.tabs([
         "📦 Produtos",
@@ -15,7 +27,9 @@ def show_ajuda():
         "🏭 Produção",
         "🛒 Vendas",
         "💰 Financeiro",
-        "💾 Backup"
+        "💾 Backup",
+        "⚠️ Erros Comuns",
+        "✅ Boas Práticas"
     ])
 
     # =========================
@@ -28,12 +42,10 @@ def show_ajuda():
 
         st.markdown("""
         ### Tipos de produto
-
         - Matéria Prima
         - Produto Final
 
         ### Exemplos
-
         Farinha → Matéria Prima  
         Bolo → Produto Final
         """)
@@ -45,32 +57,20 @@ def show_ajuda():
         st.markdown("""
         O sistema trabalha conforme a unidade cadastrada.
 
-        ### Exemplos:
-
-        #### Unidade = KG
-
+        #### KG
         - 0.01 = 10g
-        - 0.02 = 20g
         - 0.1 = 100g
         - 1 = 1kg
-        - 2 = 2kg
 
-        #### Unidade = UN
-
+        #### UN
         - 1 = 1 unidade
         - 10 = 10 unidades
-        - 200 = 200 unidades
 
-        #### Unidade = Litro
-
+        #### Litro
         - 0.5 = meio litro
-        - 1 = 1 litro
         """)
 
-        st.warning("""
-        ⚠️ Use sempre o mesmo padrão de unidade
-        para evitar erros de estoque.
-        """)
+        st.warning("⚠️ Sempre usar a mesma unidade para evitar erro de estoque")
 
         st.divider()
 
@@ -80,7 +80,7 @@ def show_ajuda():
         - Custo = valor pago
         - Venda = preço vendido
 
-        O sistema calcula lucro automaticamente.
+        ✔ Lucro é calculado automaticamente
         """)
 
     # =========================
@@ -92,26 +92,15 @@ def show_ajuda():
         st.header("🧪 Receitas")
 
         st.markdown("""
-        As receitas definem quanto de matéria-prima
-        será consumida na produção.
-        """)
+        Define quanto de matéria-prima será consumida.
 
-        st.subheader("📌 Exemplo")
-
-        st.markdown("""
-        Produto Final:
-        - Bolo Chocolate
-
-        Matérias-primas:
-        - 0.2 kg farinha
-        - 0.1 kg açúcar
-        - 3 ovos
+        ✔ Ligação entre produto final e insumos
         """)
 
         st.info("""
-        Ao produzir:
-        ✔ estoque do produto final aumenta
-        ✔ matéria-prima reduz automaticamente
+        Produção automática:
+        ✔ soma produto final  
+        ✔ reduz matéria-prima  
         """)
 
     # =========================
@@ -123,23 +112,11 @@ def show_ajuda():
         st.header("🏭 Produção")
 
         st.markdown("""
-        O módulo produção transforma matéria-prima
-        em produto final.
-        """)
-
-        st.subheader("🔄 O que acontece")
-
-        st.markdown("""
-        Quando uma produção é registrada:
-
-        ✔ baixa matéria-prima  
-        ✔ aumenta produto final  
-        ✔ registra custo  
+        Transforma matéria-prima em produto final.
         """)
 
         st.warning("""
-        ⚠️ Se faltar matéria-prima,
-        a produção não deve ser realizada.
+        ⚠️ Não produza sem estoque suficiente!
         """)
 
     # =========================
@@ -151,25 +128,9 @@ def show_ajuda():
         st.header("🛒 Vendas")
 
         st.markdown("""
-        O módulo vendas:
-
         ✔ baixa estoque  
         ✔ calcula lucro  
-        ✔ registra venda  
-        ✔ alimenta financeiro  
-        """)
-
-        st.subheader("📌 Exemplo")
-
-        st.markdown("""
-        Venda:
-        - 2 bolos
-        - valor R$ 80
-
-        O ERP:
-        - reduz estoque
-        - calcula lucro
-        - gera entrada financeira
+        ✔ gera financeiro  
         """)
 
     # =========================
@@ -181,33 +142,14 @@ def show_ajuda():
         st.header("💰 Financeiro")
 
         st.markdown("""
-        O financeiro controla entradas e saídas.
+        Controle completo de caixa.
         """)
 
-        st.subheader("✅ Entradas")
-
-        st.markdown("""
-        - vendas
-        - recebimentos
-        - depósitos
-        """)
-
-        st.subheader("❌ Saídas")
-
-        st.markdown("""
-        - aluguel
-        - energia
-        - fornecedores
-        - salários
-        - impostos
-        """)
-
-        st.info("""
-        O financeiro mostra:
-        ✔ lucro
-        ✔ despesas
-        ✔ fluxo de caixa
-        ✔ saldo
+        st.success("""
+        O sistema calcula automaticamente:
+        ✔ saldo  
+        ✔ lucro  
+        ✔ despesas  
         """)
 
     # =========================
@@ -219,20 +161,63 @@ def show_ajuda():
         st.header("💾 Backup")
 
         st.markdown("""
-        O backup cria uma cópia de segurança
-        do sistema.
+        Cria cópia de segurança da base de dados.
         """)
 
-        st.subheader("📌 Recomendação")
+        st.warning("""
+        Gere backup:
+        - diariamente  
+        - antes de alterações  
+        """)
+
+    # =========================
+    # ERROS COMUNS
+    # =========================
+
+    with abas[6]:
+
+        st.header("⚠️ Erros Comuns")
 
         st.markdown("""
-        Gere backup:
-        - diariamente
-        - antes de grandes alterações
-        - antes de atualizar o sistema
+        ❌ Produto não aparece na receita  
+        ✔ Verifique o tipo (Produto Final / Matéria Prima)
+
+        ❌ Estoque negativo  
+        ✔ Falta controle de produção ou venda
+
+        ❌ Não consegue logar  
+        ✔ Verifique usuário e senha
+
+        ❌ Dados somem  
+        ✔ Necessidade de backup
+
+        ❌ Receita não funciona  
+        ✔ Produto não vinculado corretamente
         """)
 
-        st.success("""
-        Os backups ficam salvos na pasta:
-        backups/
+    # =========================
+    # BOAS PRÁTICAS
+    # =========================
+
+    with abas[7]:
+
+        st.header("✅ Boas Práticas")
+
+        st.markdown("""
+        ✔ Use nomes padronizados (ex: Farinha KG)  
+        ✔ Não misture unidades (KG com UN)  
+        ✔ Cadastre custo real  
+        ✔ Faça backup diário  
+        ✔ Evite duplicar produtos  
+        ✔ Valide estoque antes da produção  
+
+        ### 💡 Uso profissional
+
+        - Use o sistema diariamente  
+        - Faça conferência semanal  
+        - Controle entradas e saídas  
+        - Analise lucro constantemente  
         """)
+
+        st.success("✅ Seguindo isso, seu ERP funciona como sistema profissional")
+``
