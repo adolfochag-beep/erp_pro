@@ -199,3 +199,7 @@ def show_login():
                 st.error("""
                 Usuário já existe
                 """)
+                
+def limpar_sessao():
+
+    st.session_state.clear()
