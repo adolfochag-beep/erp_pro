@@ -27,15 +27,10 @@ def show_login():
 
     usuario_salvo = carregar_sessao()
 
-    # ✅ Se já tem sessão, não pede login
     if usuario_salvo:
         st.session_state["logado"] = True
         st.session_state["usuario"] = usuario_salvo
         return
-
-    # =========================
-    # TELA LOGIN
-    # =========================
 
     c1, c2, c3 = st.columns([1, 1.2, 1])
 
@@ -71,7 +66,6 @@ def show_login():
 
                         salvar_sessao(usuario)
 
-                        st.success("Login realizado ✅")
                         st.rerun()
 
                 st.error("Usuário ou senha inválidos")
