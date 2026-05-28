@@ -17,9 +17,11 @@ def show_receitas():
         st.warning("Cadastre produtos primeiro")
         return
 
-    # separa corretamente
-    produtos_finais = produtos[produtos["tipo"] == "Produto Final"]
-    materias_primas = produtos[produtos["tipo"] == "Matéria Prima"]
+    # ✅ normaliza (evita erro de texto)
+    produtos["tipo"] = produtos["tipo"].str.lower().str.strip()
+
+    produtos_finais = produtos[produtos["tipo"] == "produto final"]
+    materias_primas = produtos[produtos["tipo"] == "matéria prima"]
 
     if produtos_finais.empty or materias_primas.empty:
         st.warning("Precisa ter Produto Final e Matéria Prima cadastrados")
@@ -31,12 +33,12 @@ def show_receitas():
 
     with st.form("receita", clear_on_submit=True):
 
-        produto_final = st.selectbox(
+        produto_final_nome = st.selectbox(
             "Produto Final",
             produtos_finais["nome"]
         )
 
-        materia_prima = st.selectbox(
+        materia_prima_nome = st.selectbox(
             "Matéria Prima",
             materias_primas["nome"]
         )
@@ -51,15 +53,23 @@ def show_receitas():
 
         if salvar:
 
-            pf_id = produtos_finais[
-                produtos_finais["nome"] == produto_final
-            ].iloc[0]["id"]
+            # ✅ seguro (não quebra mais)
+            pf = produtos_finais[
+                produtos_finais["nome"] == produto_final_nome
+            ]
 
-            mp_id = materias_primas[
-                materias_primas["nome"] == materia_prima
-            ].iloc[0]["id"]
+            mp = materias_primas[
+                materias_primas["nome"] == materia_prima_nome
+            ]
 
-            # ✅ EVITA DUPLICIDADE
+            if pf.empty or mp.empty:
+                st.error("Erro ao localizar produtos")
+                return
+
+            pf_id = int(pf.iloc[0]["id"])
+            mp_id = int(mp.iloc[0]["id"])
+
+            # ✅ evita duplicidade
             existe = query("""
                 SELECT * FROM receitas
                 WHERE produto_final=? AND materia_prima=?
@@ -78,7 +88,7 @@ def show_receitas():
     st.divider()
 
     # =========================
-    # LISTAGEM PROFISSIONAL
+    # LISTAGEM
     # =========================
 
     receitas = query("""
@@ -88,73 +98,79 @@ def show_receitas():
             p2.nome as materia_prima,
             r.quantidade
         FROM receitas r
-        JOIN produtos p1 ON r.produto_final = p1.id
-        JOIN produtos p2 ON r.materia_prima = p2.id
+        LEFT JOIN produtos p1 ON r.produto_final = p1.id
+        LEFT JOIN produtos p2 ON r.materia_prima = p2.id
     """)
 
-    if not receitas.empty:
+    if receitas.empty:
+        st.info("Nenhuma receita cadastrada")
+        return
 
-        st.subheader("📋 Estrutura das Receitas")
+    st.subheader("📋 Estrutura das Receitas")
 
-        # ✅ edição direta
-        editado = st.data_editor(
-            receitas,
-            use_container_width=True,
-            height=400
-        )
+    # =========================
+    # TABELA EDITÁVEL
+    # =========================
 
-        # =========================
-        # SALVAR ALTERAÇÕES
-        # =========================
+    editado = st.data_editor(
+        receitas,
+        use_container_width=True,
+        height=400
+    )
 
-        if st.button("💾 Salvar alterações"):
+    # =========================
+    # SALVAR ALTERAÇÕES
+    # =========================
 
-            for _, row in editado.iterrows():
+    if st.button("💾 Salvar alterações"):
 
-                pf_id = query(
-                    "SELECT id FROM produtos WHERE nome=?",
-                    (row["produto_final"],)
-                ).iloc[0]["id"]
+        for _, row in editado.iterrows():
 
-                mp_id = query(
-                    "SELECT id FROM produtos WHERE nome=?",
-                    (row["materia_prima"],)
-                ).iloc[0]["id"]
-
-                execute("""
-                UPDATE receitas
-                SET produto_final=?, materia_prima=?, quantidade=?
-                WHERE id=?
-                """, (
-                    pf_id,
-                    mp_id,
-                    row["quantidade"],
-                    row["id"]
-                ))
-
-            st.success("✅ Alterações salvas")
-
-        # =========================
-        # EXCLUIR
-        # =========================
-
-        with st.expander("🗑️ Excluir receita"):
-
-            id_excluir = st.selectbox(
-                "Selecione a receita",
-                receitas["id"]
+            # protege erro se nome mudar
+            pf = query(
+                "SELECT id FROM produtos WHERE nome=?",
+                (row["produto_final"],)
             )
 
-            if st.button("Excluir"):
+            mp = query(
+                "SELECT id FROM produtos WHERE nome=?",
+                (row["materia_prima"],)
+            )
 
-                execute(
-                    "DELETE FROM receitas WHERE id=?",
-                    (id_excluir,)
-                )
+            if pf.empty or mp.empty:
+                continue
 
-                st.success("Receita excluída")
-                st.rerun()
+            execute("""
+            UPDATE receitas
+            SET produto_final=?, materia_prima=?, quantidade=?
+            WHERE id=?
+            """, (
+                int(pf.iloc[0]["id"]),
+                int(mp.iloc[0]["id"]),
+                row["quantidade"],
+                row["id"]
+            ))
 
-    else:
-        st.info("Nenhuma receita cadastrada")
-``
+        st.success("✅ Alterações salvas")
+        st.rerun()
+
+    # =========================
+    # EXCLUSÃO
+    # =========================
+
+    with st.expander("🗑️ Excluir receita"):
+
+        id_excluir = st.selectbox(
+            "Selecione a receita",
+            receitas["id"]
+        )
+
+        if st.button("Excluir receita"):
+
+            execute(
+                "DELETE FROM receitas WHERE id=?",
+                (id_excluir,)
+            )
+
+            st.success("✅ Receita excluída")
+            st.rerun()
