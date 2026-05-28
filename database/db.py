@@ -3,74 +3,46 @@ import pandas as pd
 import streamlit as st
 import bcrypt
 
-DB_NAME = "erp_v3.db"
+DB = "erp.db"
 
-# =========================================================
-# CONEXÃO SEGURA
-# =========================================================
 def conn():
-    return sqlite3.connect(DB_NAME, check_same_thread=False)
+    return sqlite3.connect(DB, check_same_thread=False)
 
-# =========================================================
-# QUERY (COM PROTEÇÃO)
-# =========================================================
 @st.cache_data(ttl=60)
 def query(sql, params=()):
-
     try:
         c = conn()
         df = pd.read_sql_query(sql, c, params=params)
         c.close()
         return df
-
-    except Exception as e:
-        # 👇 evita quebrar app
-        st.error("Erro ao consultar banco")
+    except:
         return pd.DataFrame()
 
-# =========================================================
-# EXECUTE
-# =========================================================
 def execute(sql, params=()):
+    c = conn()
+    cur = c.cursor()
+    cur.execute(sql, params)
+    c.commit()
+    c.close()
+    st.cache_data.clear()
 
-    try:
-        c = conn()
-        cur = c.cursor()
-        cur.execute(sql, params)
-        c.commit()
-        c.close()
-
-        st.cache_data.clear()
-
-    except Exception as e:
-        st.error("Erro ao executar operação")
-
-
-# =========================================================
-# CRIAR TABELAS
-# =========================================================
 def init_db():
-
     c = conn()
     cur = c.cursor()
 
-    # ✅ USUÁRIOS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS usuarios(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        usuario TEXT UNIQUE,
-        senha TEXT,
-        cargo TEXT
+        id INTEGER PRIMARY KEY,
+        usuario TEXT,
+        senha TEXT
     )
     """)
 
-    # ✅ PRODUTOS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS produtos(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY,
         nome TEXT,
         tipo TEXT,
-        unidade TEXT,
         estoque REAL,
         estoque_min REAL,
         custo REAL,
@@ -78,77 +50,49 @@ def init_db():
     )
     """)
 
-    # ✅ RECEITAS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS receitas(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY,
         produto_final INTEGER,
         materia_prima INTEGER,
         quantidade REAL
     )
     """)
 
-    # ✅ PRODUÇÃO
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS producoes(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        produto_final INTEGER,
-        quantidade REAL,
-        custo REAL,
-        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    # ✅ VENDAS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS vendas(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY,
         produto TEXT,
-        quantidade REAL,
         total REAL,
-        lucro REAL,
-        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        lucro REAL
     )
     """)
 
-    # ✅ FINANCEIRO
     cur.execute("""
     CREATE TABLE IF NOT EXISTS financeiro(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY,
         tipo TEXT,
         descricao TEXT,
-        valor REAL,
-        status TEXT,
-        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        valor REAL
     )
     """)
 
     c.commit()
     c.close()
 
-
-# =========================================================
-# GARANTIR ADMIN
-# =========================================================
 def init_users():
-
     c = conn()
     cur = c.cursor()
 
     cur.execute("SELECT * FROM usuarios WHERE usuario='admin'")
-    user = cur.fetchone()
+    if not cur.fetchone():
 
-    if not user:
-        senha = bcrypt.hashpw(
-            "123456".encode(),
-            bcrypt.gensalt()
-        ).decode()
+        senha = bcrypt.hashpw("123456".encode(), bcrypt.gensalt()).decode()
 
-        cur.execute("""
-        INSERT INTO usuarios(usuario, senha, cargo)
-        VALUES(?,?,?)
-        """, ("admin", senha, "ADMIN"))
+        cur.execute(
+            "INSERT INTO usuarios(usuario, senha) VALUES(?,?)",
+            ("admin", senha)
+        )
 
     c.commit()
     c.close()
-``
