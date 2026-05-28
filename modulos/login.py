@@ -1,85 +1,77 @@
 import streamlit as st
+import os
+from database.db import query
 import bcrypt
-import pandas as pd
 
-from database.db import users_conn
+SESSION_FILE = "session_login.txt"
+
+
+def salvar_sessao(usuario):
+    with open(SESSION_FILE, "w") as f:
+        f.write(usuario)
+
+
+def carregar_sessao():
+    if os.path.exists(SESSION_FILE):
+        with open(SESSION_FILE, "r") as f:
+            return f.read().strip()
+    return None
+
+
+def limpar_sessao():
+    if os.path.exists(SESSION_FILE):
+        os.remove(SESSION_FILE)
 
 
 def show_login():
 
-    st.markdown(
-        """
-        <div style='text-align:center;padding-top:80px;'>
+    usuario_salvo = carregar_sessao()
 
-        <h1>🚀 ERP PRO MAX</h1>
+    # ✅ Se já tem sessão, não pede login
+    if usuario_salvo:
+        st.session_state["logado"] = True
+        st.session_state["usuario"] = usuario_salvo
+        return
 
-        <p>Sistema de Gestão Empresarial</p>
+    # =========================
+    # TELA LOGIN
+    # =========================
 
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    c1, c2, c3 = st.columns([1, 1.2, 1])
 
-    col1, col2, col3 = st.columns([1,1,1])
+    with c2:
+        st.title("🔐 ERP PRO MAX")
 
-    with col2:
+        with st.form("login"):
 
-        usuario = st.text_input("Usuário")
+            usuario = st.text_input("Usuário")
+            senha = st.text_input("Senha", type="password")
 
-        senha = st.text_input(
-            "Senha",
-            type="password"
-        )
+            entrar = st.form_submit_button("Entrar")
 
-        if st.button("Entrar"):
+            if entrar:
 
-            c = users_conn()
+                if not usuario or not senha:
+                    st.warning("Informe usuário e senha")
+                    return
 
-            try:
-
-                user = pd.read_sql_query(
-                    """
-                    SELECT *
-                    FROM usuarios
-                    WHERE usuario = ?
-                    """,
-                    c,
-                    params=(usuario,)
+                dados = query(
+                    "SELECT * FROM usuarios WHERE usuario=?",
+                    (usuario,)
                 )
 
-            except Exception as e:
+                if not dados.empty:
 
-                st.error(f"Erro banco usuários: {e}")
+                    senha_hash = dados.iloc[0]["senha"]
 
-                c.close()
+                    if bcrypt.checkpw(senha.encode(), senha_hash.encode()):
 
-                return
+                        st.session_state["logado"] = True
+                        st.session_state["usuario"] = usuario
 
-            c.close()
+                        salvar_sessao(usuario)
 
-            if user.empty:
+                        st.success("Login realizado ✅")
+                        st.rerun()
 
-                st.error("Usuário inválido")
-
-                return
-
-            senha_hash = user.iloc[0]["senha"]
-
-            if bcrypt.checkpw(
-                senha.encode(),
-                senha_hash.encode()
-            ):
-
-                st.session_state["logado"] = True
-
-                st.session_state["usuario"] = usuario
-
-                st.session_state["trocar_senha"] = (
-                    user.iloc[0]["trocar_senha"]
-                )
-
-                st.rerun()
-
-            else:
-
-                st.error("Senha incorreta")
+                st.error("Usuário ou senha inválidos")
