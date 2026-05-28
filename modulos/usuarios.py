@@ -50,78 +50,49 @@ def gerar_backup():
         st.download_button("📥 Baixar Backup", f, file_name=caminho)
 
 # =========================================================
-# SIDEBAR
+# FUNÇÃO PRINCIPAL DO MÓDULO
 # =========================================================
-with st.sidebar:
+def show_usuarios():
 
-    st.markdown("## 🍞 ERP Pro Max")
-    st.write(f"👤 {st.session_state.get('usuario', 'Usuário')}")
+    st.title("👥 Gestão Geral")
 
-    menu = st.radio(
-        "Menu",
-        [
-            "📊 Dashboard",
-            "📦 Produtos",
-            "💰 Financeiro",
-            "💾 Backup"
-        ]
-    )
+    aba1, aba2, aba3, aba4 = st.tabs([
+        "📊 Dashboard",
+        "📦 Produtos",
+        "💰 Financeiro",
+        "💾 Backup"
+    ])
 
-# =========================================================
-# DASHBOARD
-# =========================================================
-if "Dashboard" in menu:
-
-    st.title("📊 Dashboard")
-
-    vendas = query("SELECT * FROM vendas")
-    produtos = query("SELECT * FROM produtos")
-
-    faturamento = vendas['total'].sum() if not vendas.empty else 0
-    lucro = vendas['lucro'].sum() if not vendas.empty else 0
-
-    estoque_baixo = query("""
-        SELECT * FROM produtos
-        WHERE estoque <= estoque_min
-    """)
-
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Faturamento", moeda(faturamento))
-    c2.metric("Lucro", moeda(lucro))
-    c3.metric("Produtos", len(produtos))
-    c4.metric("Estoque Crítico", len(estoque_baixo))
-
-    st.markdown("### ⚠️ Produtos com Estoque Crítico")
-
-    if not estoque_baixo.empty:
-
-        def highlight(row):
-            if row["estoque"] == 0:
-                return ['background-color: red; color: white'] * len(row)
-            return ['background-color: #fff3cd'] * len(row)
-
-        st.dataframe(
-            estoque_baixo.style.apply(highlight, axis=1),
-            use_container_width=True
-        )
-
-    if not vendas.empty:
-
-        graf = vendas.groupby('data')['total'].sum().reset_index()
-
-        fig = px.bar(graf, x='data', y='total')
-        st.plotly_chart(fig, use_container_width=True)
-
-# =========================================================
-# PRODUTOS
-# =========================================================
-elif "Produtos" in menu:
-
-    st.title("📦 Produtos")
-
-    aba1, aba2 = st.tabs(["Cadastrar", "Listagem"])
-
+    # =========================
+    # DASHBOARD
+    # =========================
     with aba1:
+
+        vendas = query("SELECT * FROM vendas")
+        produtos = query("SELECT * FROM produtos")
+
+        faturamento = vendas['total'].sum() if not vendas.empty else 0
+        lucro = vendas['lucro'].sum() if not vendas.empty else 0
+
+        estoque_baixo = query("""
+            SELECT * FROM produtos
+            WHERE estoque <= estoque_min
+        """)
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Faturamento", moeda(faturamento))
+        c2.metric("Lucro", moeda(lucro))
+        c3.metric("Produtos", len(produtos))
+        c4.metric("Estoque Crítico", len(estoque_baixo))
+
+        if not estoque_baixo.empty:
+            st.dataframe(estoque_baixo, use_container_width=True)
+
+    # =========================
+    # PRODUTOS
+    # =========================
+    with aba2:
+
         with st.form("produto"):
 
             nome = st.text_input("Nome")
@@ -136,7 +107,7 @@ elif "Produtos" in menu:
 
                 if not nome:
                     st.warning("Informe o nome")
-                    st.stop()
+                    return
 
                 execute("""
                 INSERT INTO produtos(nome,tipo,unidade,estoque,estoque_min,custo,venda)
@@ -145,47 +116,35 @@ elif "Produtos" in menu:
 
                 st.success("Produto cadastrado")
 
-    with aba2:
-        produtos = query("SELECT * FROM produtos")
-        tabela(produtos)
+        tabela(query("SELECT * FROM produtos"))
 
-# =========================================================
-# FINANCEIRO
-# =========================================================
-elif "Financeiro" in menu:
+    # =========================
+    # FINANCEIRO
+    # =========================
+    with aba3:
 
-    st.title("💰 Financeiro")
+        with st.form("financeiro"):
 
-    with st.form("financeiro"):
+            tipo = st.selectbox("Tipo", ["Receita", "Despesa"])
+            descricao = st.text_input("Descrição")
+            valor = st.number_input("Valor", min_value=0.0)
+            status = st.selectbox("Status", ["Pendente", "Pago"])
 
-        tipo = st.selectbox("Tipo", ["Receita", "Despesa"])
-        descricao = st.text_input("Descrição")
-        valor = st.number_input("Valor", min_value=0.0)
-        status = st.selectbox("Status", ["Pendente", "Pago"])
+            if st.form_submit_button("Salvar"):
 
-        if st.form_submit_button("Salvar"):
+                execute("""
+                INSERT INTO financeiro(tipo,descricao,valor,status)
+                VALUES(?,?,?,?)
+                """, (tipo, descricao, valor, status))
 
-            execute("""
-            INSERT INTO financeiro(tipo,descricao,valor,status)
-            VALUES(?,?,?,?)
-            """, (tipo, descricao, valor, status))
+                st.success("Lançamento salvo")
 
-            st.success("Lançamento salvo")
+        tabela(query("SELECT * FROM financeiro"))
 
-    fin = query("SELECT * FROM financeiro")
+    # =========================
+    # BACKUP
+    # =========================
+    with aba4:
 
-    if not fin.empty:
-        fin["valor"] = fin["valor"].apply(moeda)
-
-    tabela(fin)
-
-# =========================================================
-# BACKUP
-# =========================================================
-elif "Backup" in menu:
-
-    st.title("💾 Backup")
-
-    if st.button("Gerar Backup"):
-        gerar_backup()
-``
+        if st.button("Gerar Backup"):
+            gerar_backup()
