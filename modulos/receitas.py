@@ -3,7 +3,8 @@ from database.db import query, execute, recalcular_custo_produto
 
 
 def show_receitas():
-       st.title("📚 Receitas")
+        st.title("📚 Receitas (BOM)")
+
 
     produtos = query("SELECT * FROM produtos")
 
