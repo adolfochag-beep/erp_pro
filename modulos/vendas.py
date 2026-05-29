@@ -3,13 +3,14 @@ import pandas as pd
 
 from database.db import query, execute
 
-# ⚠️ mantenha só se o arquivo existir
-from utils.pdf import gerar_pdf_vendas
-
 
 def show_vendas():
 
     st.title("🛒 Vendas")
+
+    # =========================
+    # NOVA VENDA
+    # =========================
 
     produtos = query("""
         SELECT *
@@ -21,19 +22,21 @@ def show_vendas():
         st.warning("Sem produtos cadastrados")
         return
 
-    produto = st.selectbox(
-        "Produto",
-        produtos["nome"]
+    produto = st.selectbox("Produto", produtos["nome"])
+    info = produtos[produtos["nome"] == produto].iloc[0]
+
+    qtd = st.number_input("Quantidade", min_value=1.0, step=1.0)
+
+    cliente = st.text_input("Cliente / Destinatário")
+
+    forma_pagamento = st.selectbox(
+        "Forma de pagamento",
+        ["PIX", "Cartão", "Dinheiro", "Boleto", "Transferência"]
     )
 
-    info = produtos[
-        produtos["nome"] == produto
-    ].iloc[0]
-
-    qtd = st.number_input(
-        "Quantidade",
-        min_value=1.0,
-        step=1.0
+    status_pagamento = st.selectbox(
+        "Status do pagamento",
+        ["Pago", "Pendente"]
     )
 
     total = qtd * info["venda"]
@@ -42,35 +45,68 @@ def show_vendas():
 
     if st.button("✅ Finalizar Venda"):
 
-        # ✅ CORRETO (sem HTML)
         if qtd > info["estoque"]:
             st.error("Estoque insuficiente")
             return
 
-        novo_estoque = info["estoque"] - qtd
+        # =========================
+        # AJUSTA ESTOQUE
+        # =========================
 
+        novo_estoque = info["estoque"] - qtd
         lucro = total - (qtd * info["custo"])
 
         execute("""
             UPDATE produtos
             SET estoque=?
             WHERE id=?
-        """, (
-            novo_estoque,
-            info["id"]
-        ))
+        """, (novo_estoque, info["id"]))
+
+        # =========================
+        # REGISTRA VENDA
+        # =========================
 
         execute("""
-            INSERT INTO vendas(produto, quantidade, total, lucro)
-            VALUES(?,?,?,?)
+            INSERT INTO vendas(
+                produto,
+                quantidade,
+                total,
+                lucro,
+                cliente,
+                forma_pagamento,
+                status_pagamento
+            )
+            VALUES(?,?,?,?,?,?,?)
         """, (
             produto,
             qtd,
             total,
-            lucro
+            lucro,
+            cliente,
+            forma_pagamento,
+            status_pagamento
         ))
 
-        st.success("✅ Venda registrada")
+        # =========================
+        # ALIMENTA FINANCEIRO
+        # =========================
+
+        execute("""
+            INSERT INTO financeiro(
+                tipo,
+                descricao,
+                valor,
+                status
+            )
+            VALUES(?,?,?,?)
+        """, (
+            "Entrada",
+            f"Venda - {produto} ({cliente})",
+            total,
+            status_pagamento
+        ))
+
+        st.success("✅ Venda registrada e financeiro atualizado")
         st.rerun()
 
     # =========================
@@ -80,30 +116,21 @@ def show_vendas():
     st.divider()
     st.subheader("📋 Histórico de Vendas")
 
-    df = query("""
-        SELECT *
+    vendas = query("""
+        SELECT
+            produto,
+            quantidade,
+            total,
+            cliente,
+            forma_pagamento,
+            status_pagamento,
+            data
         FROM vendas
-        ORDER BY id DESC
+        ORDER BY data DESC
     """)
 
-    if df.empty:
+    if vendas.empty:
         st.info("Nenhuma venda registrada")
         return
 
-    st.dataframe(df, use_container_width=True)
-
-    # =========================
-    # PDF
-    # =========================
-
-    if st.button("📄 Gerar PDF"):
-
-        gerar_pdf_vendas(df)
-
-        with open("relatorio_vendas.pdf", "rb") as file:
-            st.download_button(
-                label="⬇️ Baixar PDF",
-                data=file,
-                file_name="relatorio_vendas.pdf",
-                mime="application/pdf"
-            )
+    st.dataframe(vendas, use_container_width=True)
