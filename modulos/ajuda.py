@@ -93,7 +93,7 @@ def show_ajuda():
         - Em qual quantidade
         """)
 
-        st.subheader("📌 Exemplo")
+         st.subheader("📌 Exemplo")
 
         st.markdown("""
         Produto Final: Bolo  
@@ -109,6 +109,7 @@ def show_ajuda():
         - o custo do produto final é recalculado automaticamente
         """)
 
+        
     # =========================
     # PRODUÇÃO
     # =========================
