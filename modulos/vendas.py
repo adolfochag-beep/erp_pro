@@ -103,20 +103,20 @@ def show_vendas():
         ))
 
         execute("""
-            INSERT INTO financeiro(
-                tipo,
-                descricao,
-                valor,
-                status
-            )
-            VALUES(?,?,?,?)
-        """,
-        (
-            "Entrada",
-            f"Venda - {produto_nome}",
-            total,
-            status_pagamento
-        ))
+    INSERT INTO financeiro(
+        tipo,
+        descricao,
+        valor,
+        status
+    )
+    VALUES(?,?,?,?)
+""",
+(
+    "Entrada",
+    f"Venda - {produto_nome} ({forma_pagamento})",
+    total,
+    status_pagamento
+))
 
         st.success("✅ Venda realizada com sucesso!")
         st.rerun()
