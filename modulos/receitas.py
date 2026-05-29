@@ -3,8 +3,8 @@ from database.db import query, execute, recalcular_custo_produto
 
 
 def show_receitas():
-        st.title("📚 Receitas (BOM)")
 
+    st.title("📚 Receitas (BOM)")
 
     produtos = query("SELECT * FROM produtos")
 
@@ -20,6 +20,7 @@ def show_receitas():
         .str.encode("ascii", errors="ignore")
         .str.decode("utf-8")
     )
+
 
     finais = produtos[produtos["tipo"] == "produto final"]
     materias = produtos[produtos["tipo"] == "materia prima"]
