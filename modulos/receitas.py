@@ -3,6 +3,8 @@ from database.db import query, execute, recalcular_custo_produto
 
 
 def show_receitas():
+    # ⚠️ TEMPORÁRIO — corrigir estrutura antiga da tabela receitas
+execute("DROP TABLE IF EXISTS receitas")
 
     st.title("📚 Receitas (BOM)")
 
