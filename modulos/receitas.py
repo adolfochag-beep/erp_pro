@@ -6,17 +6,13 @@ def show_receitas():
 
     st.title("📚 Receitas (BOM)")
 
-    # =========================
-    # DADOS DE PRODUTOS
-    # =========================
-
     produtos = query("SELECT * FROM produtos")
 
     if produtos.empty:
         st.warning("Cadastre produtos primeiro")
         return
 
-    # normaliza tipo (remove acento e lowercase)
+    # normaliza tipo
     produtos["tipo"] = (
         produtos["tipo"]
         .str.lower()
@@ -35,18 +31,10 @@ def show_receitas():
     # =========================
     # FORMULÁRIO
     # =========================
-
     with st.form("receita", clear_on_submit=True):
 
-        pf_nome = st.selectbox(
-            "Produto Final",
-            finais["nome"]
-        )
-
-        mp_nome = st.selectbox(
-            "Materia Prima",
-            materias["nome"]
-        )
+        pf_nome = st.selectbox("Produto Final", finais["nome"])
+        mp_nome = st.selectbox("Materia Prima", materias["nome"])
 
         qtd = st.number_input(
             "Quantidade por unidade",
@@ -54,28 +42,16 @@ def show_receitas():
             step=0.01
         )
 
-        salvar = st.form_submit_button("Adicionar Receita")
+        if st.form_submit_button("Adicionar Receita"):
 
-        if salvar:
-
-            pf_id = finais[
-                finais["nome"] == pf_nome
-            ].iloc[0]["id"]
-
-            mp_id = materias[
-                materias["nome"] == mp_nome
-            ].iloc[0]["id"]
+            pf_id = finais[finais["nome"] == pf_nome].iloc[0]["id"]
+            mp_id = materias[materias["nome"] == mp_nome].iloc[0]["id"]
 
             execute("""
-                INSERT INTO receitas(
-                    produto_final,
-                    materia_prima,
-                    quantidade
-                )
+                INSERT INTO receitas(produto_final, materia_prima, quantidade)
                 VALUES(?,?,?)
             """, (pf_id, mp_id, qtd))
 
-            # recalcula custo automaticamente
             recalcular_custo_produto(pf_id)
 
             st.success("✅ Receita adicionada")
@@ -83,9 +59,8 @@ def show_receitas():
     st.divider()
 
     # =========================
-    # LISTAGEM (CORRIGIDA)
+    # LISTAGEM
     # =========================
-
     receitas = query("""
         SELECT
             r.id,
@@ -102,10 +77,4 @@ def show_receitas():
         st.info("Nenhuma receita cadastrada")
         return
 
-    st.subheader("📋 Estrutura das Receitas")
-
-    st.dataframe(
-        receitas,
-        use_container_width=True,
-        height=400
-    )
+    st.dataframe(receitas, use_container_width=True, height=400)
