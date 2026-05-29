@@ -109,3 +109,4 @@ def show_receitas():
         use_container_width=True,
         height=400
     )
+execute("DELETE FROM receitas")
