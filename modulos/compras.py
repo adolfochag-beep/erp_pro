@@ -7,44 +7,35 @@ def show_compras():
 
     st.title("⚠️ Lista de Compras")
 
-    try:
-
-        df = query("""
-        SELECT *,
+    sql = """
+        SELECT
+            nome,
+            tipo,
+            unidade,
+            estoque,
+            estoque_min,
             (estoque_min - estoque) AS comprar
         FROM produtos
         WHERE estoque <= estoque_min
-        """)
+    """
 
-    except Exception as e:
-        st.error("Erro ao consultar dados")
-        st.write(e)
-        return
+    df = query(sql)
 
     if df is None or df.empty:
-        st.success("✅ Estoque OK")
+        st.success("✅ Estoque OK. Nenhum item precisa de reposicao.")
         return
 
-    # tratamento
     df["comprar"] = df["comprar"].clip(lower=0)
 
-    # ordena mais crítico primeiro
-    df = df.sort_values(by="estoque")
+    st.warning("Itens que precisam de reposicao")
 
-    # KPI
-    total_itens = len(df)
-    st.metric("Itens críticos", total_itens)
-
-    st.warning("Produtos que precisam reposição")
-
-    # destaque
-    def highlight(row):
+    def destaque(row):
         if row["estoque"] == 0:
-            return ['background-color: red; color: white'] * len(row)
-        return ['background-color: #fff3cd'] * len(row)
+            return ["background-color: #fee2e2"] * len(row)
+        return ["background-color: #fff7ed"] * len(row)
 
     st.dataframe(
-        df.style.apply(highlight, axis=1),
+        df.style.apply(destaque, axis=1),
         use_container_width=True,
         height=400
     )
