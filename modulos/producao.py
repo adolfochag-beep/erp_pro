@@ -5,21 +5,41 @@ def show_producao():
 
     st.subheader("🏭 Produção")
 
-    produtos = query("SELECT * FROM produtos WHERE tipo='Produto Final'")
+    # Busca todos os produtos
+    produtos = query("SELECT * FROM produtos")
 
-    # valida se existem produtos
     if produtos.empty:
-        st.warning("Nenhum produto final cadastrado.")
+        st.warning("Nenhum produto cadastrado.")
+        return
+
+    # Normaliza igual ao módulo de receitas
+    produtos["tipo"] = (
+        produtos["tipo"]
+        .astype(str)
+        .str.lower()
+        .str.normalize("NFKD")
+        .str.encode("ascii", errors="ignore")
+        .str.decode("utf-8")
+    )
+
+    # Filtra produtos finais
+    produtos_finais = produtos[
+        produtos["tipo"] == "produto final"
+    ]
+
+    if produtos_finais.empty:
+        st.warning("Nenhum Produto Final cadastrado.")
         return
 
     produto_nome = st.selectbox(
         "Produto",
-        produtos["nome"].tolist()
+        produtos_finais["nome"].tolist()
     )
 
-    produto_filtrado = produtos[produtos["nome"] == produto_nome]
+    produto_filtrado = produtos_finais[
+        produtos_finais["nome"] == produto_nome
+    ]
 
-    # valida filtro
     if produto_filtrado.empty:
         st.error("Produto não encontrado.")
         return
@@ -29,61 +49,80 @@ def show_producao():
     qtd = st.number_input(
         "Quantidade",
         min_value=1.0,
-        value=1.0
+        value=1.0,
+        step=1.0
     )
 
     if st.button("Produzir"):
 
+        produto_id = int(produto["id"])
+
         receitas = query("""
             SELECT
                 r.quantidade,
-                p.id mp_id,
-                p.nome mp_nome,
+                p.id AS mp_id,
+                p.nome AS mp_nome,
                 p.estoque,
                 p.custo
             FROM receitas r
-            JOIN produtos p
+            INNER JOIN produtos p
                 ON r.materia_prima = p.id
             WHERE r.produto_final = ?
-        """, (produto["id"],))
+        """, (produto_id,))
 
-        # valida se possui receita
+        # Diagnóstico temporário
+        st.write("Produto ID:", produto_id)
+        st.write("Receitas encontradas:", len(receitas))
+
         if receitas.empty:
-            st.error("Esse produto não possui receita cadastrada.")
+            st.error(
+                f"Nenhuma receita encontrada para o produto '{produto_nome}'."
+            )
             return
 
-        # valida estoque
+        # Valida estoque das matérias-primas
         for _, r in receitas.iterrows():
 
-            necessario = r["quantidade"] * qtd
+            necessario = float(r["quantidade"]) * qtd
 
-            if r["estoque"] < necessario:
+            if float(r["estoque"]) < necessario:
                 st.error(
-                    f"Estoque insuficiente de {r['mp_nome']}"
+                    f"Estoque insuficiente de {r['mp_nome']} "
+                    f"(necessário: {necessario}, disponível: {r['estoque']})"
                 )
                 return
 
-        custo = 0
+        custo_total = 0
 
-        # baixa matéria-prima
+        # Consome matérias-primas
         for _, r in receitas.iterrows():
 
-            consumo = r["quantidade"] * qtd
+            consumo = float(r["quantidade"]) * qtd
 
             execute(
-                "UPDATE produtos SET estoque = estoque - ? WHERE id = ?",
-                (consumo, r["mp_id"])
+                """
+                UPDATE produtos
+                SET estoque = estoque - ?
+                WHERE id = ?
+                """,
+                (consumo, int(r["mp_id"]))
             )
 
-            custo += r["custo"] * consumo
+            custo_total += (
+                float(r["custo"]) * consumo
+            )
 
-        # adiciona produto final
+        # Adiciona produto final ao estoque
         execute(
-            "UPDATE produtos SET estoque = estoque + ? WHERE id = ?",
-            (qtd, produto["id"])
+            """
+            UPDATE produtos
+            SET estoque = estoque + ?
+            WHERE id = ?
+            """,
+            (qtd, produto_id)
         )
 
-        # registra produção
+        # Registra produção
         execute("""
             INSERT INTO producoes(
                 produto_final,
@@ -91,30 +130,32 @@ def show_producao():
                 custo,
                 status
             )
-            VALUES(?,?,?,?)
+            VALUES (?, ?, ?, ?)
         """, (
-            produto["id"],
+            produto_id,
             qtd,
-            custo,
+            custo_total,
             "Ativa"
         ))
 
-        st.success("✅ Produção registrada")
+        st.success("✅ Produção registrada com sucesso!")
+
+        st.rerun()
 
     st.divider()
 
-    st.subheader("📋 Histórico")
+    st.subheader("📋 Histórico de Produção")
 
     producoes = query("""
         SELECT
             pr.id,
-            p.nome produto,
+            p.nome AS produto,
             pr.quantidade,
             pr.custo,
             pr.status,
             pr.data
         FROM producoes pr
-        JOIN produtos p
+        LEFT JOIN produtos p
             ON pr.produto_final = p.id
         ORDER BY pr.id DESC
     """)
