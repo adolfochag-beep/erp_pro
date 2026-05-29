@@ -53,28 +53,26 @@ def show_receitas():
             format="%.2f"
         )
 
-        submitted = st.form_submit_button("Adicionar Receita")
+        if st.form_submit_button("Adicionar Receita"):
 
-        if submitted:
+            pf_id = int(
+                finais.loc[finais["nome"] == pf_nome, "id"].iloc[0]
+            )
 
-            pf_id = finais.loc[
-                finais["nome"] == pf_nome, "id"
-            ].values[0]
-
-            mp_id = materias.loc[
-                materias["nome"] == mp_nome, "id"
-            ].values[0]
+            mp_id = int(
+                materias.loc[materias["nome"] == mp_nome, "id"].iloc[0]
+            )
 
             # Evita duplicidade
             existe = query("""
-                SELECT *
+                SELECT 1
                 FROM receitas
                 WHERE produto_final = ?
-                AND materia_prima = ?
+                  AND materia_prima = ?
             """, (pf_id, mp_id))
 
             if not existe.empty:
-                st.warning("Essa matéria-prima já foi adicionada nessa receita.")
+                st.warning("Essa matéria-prima já existe nessa receita.")
                 return
 
             execute("""
@@ -86,7 +84,6 @@ def show_receitas():
                 VALUES (?, ?, ?)
             """, (pf_id, mp_id, qtd))
 
-            # Recalcula custo automaticamente
             recalcular_custo_produto(pf_id)
 
             st.success("✅ Receita adicionada com sucesso")
@@ -94,19 +91,19 @@ def show_receitas():
     st.divider()
 
     # =========================
-    # LISTAGEM
+    # LISTAGEM (ROBUSTA)
     # =========================
     receitas = query("""
         SELECT
             r.id,
-            p1.nome AS produto_final,
-            p2.nome AS materia_prima,
+            COALESCE(pf.nome, 'Produto não encontrado') AS produto_final,
+            COALESCE(mp.nome, 'Matéria-prima não encontrada') AS materia_prima,
             r.quantidade
         FROM receitas r
-        LEFT JOIN produtos p1
-            ON r.produto_final = p1.id
-        LEFT JOIN produtos p2
-            ON r.materia_prima = p2.id
+        LEFT JOIN produtos pf
+            ON CAST(r.produto_final AS INTEGER) = pf.id
+        LEFT JOIN produtos mp
+            ON CAST(r.materia_prima AS INTEGER) = mp.id
         ORDER BY r.id DESC
     """)
 
@@ -114,9 +111,6 @@ def show_receitas():
         st.info("Nenhuma receita cadastrada")
         return
 
-    # =========================
-    # RENOMEIA COLUNAS
-    # =========================
     receitas_exibir = receitas.rename(columns={
         "id": "ID",
         "produto_final": "Produto Final",
@@ -124,9 +118,6 @@ def show_receitas():
         "quantidade": "Quantidade"
     })
 
-    # =========================
-    # TABELA
-    # =========================
     st.dataframe(
         receitas_exibir,
         use_container_width=True,
