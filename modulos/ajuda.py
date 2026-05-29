@@ -7,15 +7,11 @@ def show_ajuda():
 
     st.info("Manual completo de utilização do sistema")
 
-    # =========================
-    # NAVEGAÇÃO RÁPIDA
-    # =========================
-
     st.markdown("""
     ### 🚀 Navegação rápida
 
     1. Cadastre produtos  
-    2. Crie receitas  
+    2. Crie receitas (BOM)  
     3. Produza itens  
     4. Realize vendas  
     5. Controle financeiro  
@@ -23,7 +19,7 @@ def show_ajuda():
 
     abas = st.tabs([
         "📦 Produtos",
-        "🧪 Receitas",
+        "🧪 Receitas (BOM)",
         "🏭 Produção",
         "🛒 Vendas",
         "💰 Financeiro",
@@ -35,15 +31,15 @@ def show_ajuda():
     # =========================
     # PRODUTOS
     # =========================
-
     with abas[0]:
 
         st.header("📦 Cadastro de Produtos")
 
         st.markdown("""
         ### Tipos de produto
-        - Matéria Prima
-        - Produto Final
+
+        - **Matéria Prima** → recebe custo manual  
+        - **Produto Final** → custo calculado automaticamente pela Receita
 
         ### Exemplos
         Farinha → Matéria Prima  
@@ -65,159 +61,166 @@ def show_ajuda():
         #### UN
         - 1 = 1 unidade
         - 10 = 10 unidades
-
-        #### Litro
-        - 0.5 = meio litro
         """)
 
-        st.warning("⚠️ Sempre usar a mesma unidade para evitar erro de estoque")
+        st.warning("⚠️ Não misture unidades (ex: KG com UN)")
 
         st.divider()
 
         st.subheader("💰 Custos")
 
         st.markdown("""
-        - Custo = valor pago
-        - Venda = preço vendido
+        ✅ **Matéria‑prima**: custo digitado manualmente  
+        ✅ **Produto final**: custo **calculado automaticamente pela Receita**
 
-        ✔ Lucro é calculado automaticamente
+        O custo do produto final é:
+        > Soma das matérias‑primas × quantidades definidas na Receita
         """)
 
     # =========================
     # RECEITAS
     # =========================
-
     with abas[1]:
 
-        st.header("🧪 Receitas")
+        st.header("🧪 Receitas (BOM)")
 
         st.markdown("""
-        Define quanto de matéria-prima será consumida.
+        Receita (BOM – Bill of Materials) define **como um produto é produzido**.
 
-        ✔ Ligação entre produto final e insumos
+        Ela informa:
+        - Qual produto final será produzido
+        - Quais matérias‑primas serão consumidas
+        - Em qual quantidade
+        """)
+
+        st.subheader("📌 Exemplo")
+
+        st.markdown("""
+        Produto Final: Bolo  
+
+        Matérias‑primas:
+        - 0,20 kg Farinha  
+        - 0,10 kg Açúcar  
+        - 3 UN Ovos  
         """)
 
         st.info("""
-        Produção automática:
-        ✔ soma produto final  
-        ✔ reduz matéria-prima  
+        ✅ Sempre que a Receita é criada, alterada ou excluída:
+        - o custo do produto final é recalculado automaticamente
         """)
 
     # =========================
     # PRODUÇÃO
     # =========================
-
     with abas[2]:
 
         st.header("🏭 Produção")
 
         st.markdown("""
-        Transforma matéria-prima em produto final.
+        A produção transforma matéria‑prima em produto final com base na Receita.
         """)
 
-        st.warning("""
-        ⚠️ Não produza sem estoque suficiente!
+        st.markdown("""
+        Quando você produz:
+        ✔ baixa matéria‑prima  
+        ✔ aumenta estoque do produto final  
+        ✔ utiliza o custo calculado pela Receita  
         """)
+
+        st.warning("⚠️ Se faltar matéria‑prima, a produção não deve ser realizada")
 
     # =========================
     # VENDAS
     # =========================
-
     with abas[3]:
 
         st.header("🛒 Vendas")
 
         st.markdown("""
+        O módulo de vendas:
         ✔ baixa estoque  
-        ✔ calcula lucro  
-        ✔ gera financeiro  
+        ✔ calcula lucro automaticamente  
+        ✔ usa o custo real do produto  
+        ✔ registra histórico  
         """)
 
     # =========================
     # FINANCEIRO
     # =========================
-
     with abas[4]:
 
         st.header("💰 Financeiro")
 
         st.markdown("""
-        Controle completo de caixa.
+        Controle completo de entradas e saídas.
         """)
 
         st.success("""
-        O sistema calcula automaticamente:
+        O sistema apresenta:
         ✔ saldo  
-        ✔ lucro  
+        ✔ lucro real  
         ✔ despesas  
+        ✔ fluxo de caixa  
         """)
 
     # =========================
     # BACKUP
     # =========================
-
     with abas[5]:
 
         st.header("💾 Backup")
 
         st.markdown("""
-        Cria cópia de segurança da base de dados.
+        Backup cria uma cópia de segurança do banco de dados.
         """)
 
         st.warning("""
         Gere backup:
         - diariamente  
-        - antes de alterações  
+        - antes de alterações importantes  
+        - antes de atualizar o sistema  
         """)
 
     # =========================
     # ERROS COMUNS
     # =========================
-
     with abas[6]:
 
         st.header("⚠️ Erros Comuns")
 
         st.markdown("""
-        ❌ Produto não aparece na receita  
-        ✔ Verifique o tipo (Produto Final / Matéria Prima)
+        ❌ Produto final sem custo  
+        ✔ Verifique se existe Receita cadastrada
 
         ❌ Estoque negativo  
         ✔ Falta controle de produção ou venda
 
-        ❌ Não consegue logar  
-        ✔ Verifique usuário e senha
+        ❌ Receita não recalcula custo  
+        ✔ Verifique se matéria‑prima possui custo
 
-        ❌ Dados somem  
-        ✔ Necessidade de backup
-
-        ❌ Receita não funciona  
-        ✔ Produto não vinculado corretamente
+        ❌ Produto não aparece na Receita  
+        ✔ Verifique o tipo do produto
         """)
 
     # =========================
     # BOAS PRÁTICAS
     # =========================
-
     with abas[7]:
 
         st.header("✅ Boas Práticas")
 
         st.markdown("""
-        ✔ Use nomes padronizados (ex: Farinha KG)  
-        ✔ Não misture unidades (KG com UN)  
-        ✔ Cadastre custo real  
+        ✔ Cadastre primeiro matérias‑primas  
+        ✔ Informe custo real das matérias‑primas  
+        ✔ Sempre crie Receita antes de produzir  
+        ✔ Não altere custo manualmente do produto final  
         ✔ Faça backup diário  
-        ✔ Evite duplicar produtos  
-        ✔ Valide estoque antes da produção  
+        ✔ Analise lucro com frequência  
 
         ### 💡 Uso profissional
-
-        - Use o sistema diariamente  
-        - Faça conferência semanal  
-        - Controle entradas e saídas  
-        - Analise lucro constantemente  
+        - Receita é a base do custo  
+        - Produção é o consumo  
+        - Venda usa custo real  
         """)
 
         st.success("✅ Seguindo isso, seu ERP funciona como sistema profissional")
-
