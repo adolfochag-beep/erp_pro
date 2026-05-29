@@ -9,59 +9,32 @@ import bcrypt
 # =========================
 
 BASE_DIR = os.path.dirname(
-    os.path.dirname(
-        os.path.abspath(__file__)
-    )
+    os.path.dirname(os.path.abspath(__file__))
 )
 
-DATABASE_DIR = os.path.join(
-    BASE_DIR,
-    "databases"
-)
-
-os.makedirs(
-    DATABASE_DIR,
-    exist_ok=True
-)
+DATABASE_DIR = os.path.join(BASE_DIR, "databases")
+os.makedirs(DATABASE_DIR, exist_ok=True)
 
 # =========================
-# BANCO CENTRAL USUÁRIOS
+# BANCO CENTRAL DE USUÁRIOS
 # =========================
 
-USERS_DB = os.path.join(
-    DATABASE_DIR,
-    "usuarios.db"
-)
+USERS_DB = os.path.join(DATABASE_DIR, "usuarios.db")
 
 def users_conn():
-
-    return sqlite3.connect(
-        USERS_DB,
-        check_same_thread=False
-    )
+    return sqlite3.connect(USERS_DB, check_same_thread=False)
 
 # =========================
-# BANCO EMPRESA
+# BANCO POR USUÁRIO (EMPRESA)
 # =========================
 
 def get_user_db():
 
-    usuario = st.session_state.get(
-        "usuario",
-        "default"
-    )
-
-    return os.path.join(
-        DATABASE_DIR,
-        f"{usuario}.db"
-    )
+    usuario = st.session_state.get("usuario", "default")
+    return os.path.join(DATABASE_DIR, f"{usuario}.db")
 
 def conn():
-
-    return sqlite3.connect(
-        get_user_db(),
-        check_same_thread=False
-    )
+    return sqlite3.connect(get_user_db(), check_same_thread=False)
 
 # =========================
 # QUERY
@@ -69,23 +42,12 @@ def conn():
 
 @st.cache_data(ttl=60)
 def query(sql, params=()):
-
     try:
-
         c = conn()
-
-        df = pd.read_sql_query(
-            sql,
-            c,
-            params=params
-        )
-
+        df = pd.read_sql_query(sql, c, params=params)
         c.close()
-
         return df
-
     except:
-
         return pd.DataFrame()
 
 # =========================
@@ -93,20 +55,11 @@ def query(sql, params=()):
 # =========================
 
 def execute(sql, params=()):
-
     c = conn()
-
     cur = c.cursor()
-
-    cur.execute(
-        sql,
-        params
-    )
-
+    cur.execute(sql, params)
     c.commit()
-
     c.close()
-
     st.cache_data.clear()
 
 # =========================
@@ -116,7 +69,6 @@ def execute(sql, params=()):
 def init_users():
 
     c = users_conn()
-
     cur = c.cursor()
 
     cur.execute("""
@@ -127,15 +79,12 @@ def init_users():
     )
     """)
 
-    cur.execute("""
-    SELECT *
-    FROM usuarios
-    WHERE usuario=?
-    """, ("admin",))
+    cur.execute(
+        "SELECT * FROM usuarios WHERE usuario=?",
+        ("admin",)
+    )
 
-    admin = cur.fetchone()
-
-    if not admin:
+    if not cur.fetchone():
 
         senha = bcrypt.hashpw(
             "123456".encode(),
@@ -143,28 +92,20 @@ def init_users():
         ).decode()
 
         cur.execute("""
-        INSERT INTO usuarios(
-            usuario,
-            senha
-        )
+        INSERT INTO usuarios(usuario, senha)
         VALUES(?,?)
-        """, (
-            "admin",
-            senha
-        ))
+        """, ("admin", senha))
 
     c.commit()
-
     c.close()
 
 # =========================
-# INIT ERP
+# INIT ERP (BANCO DA EMPRESA)
 # =========================
 
 def init_db():
 
     c = conn()
-
     cur = c.cursor()
 
     # PRODUTOS
@@ -181,12 +122,12 @@ def init_db():
     )
     """)
 
-    # RECEITAS
+    # RECEITAS (BOM)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS receitas(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        produto_final TEXT,
-        materia_prima TEXT,
+        produto_final INTEGER,
+        materia_prima INTEGER,
         quantidade REAL
     )
     """)
@@ -199,6 +140,9 @@ def init_db():
         quantidade REAL,
         total REAL,
         lucro REAL,
+        cliente TEXT,
+        forma_pagamento TEXT,
+        status_pagamento TEXT,
         data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
@@ -214,6 +158,14 @@ def init_db():
         data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
+    c.commit()
+    c.close()
+
+# =========================
+# CÁLCULO AUTOMÁTICO DE CUSTO (BOM)
+# =========================
+
 def recalcular_custo_produto(produto_final_id):
 
     c = conn()
@@ -236,7 +188,4 @@ def recalcular_custo_produto(produto_final_id):
     """, (custo, produto_final_id))
 
     c.commit()
-    c.close()
-    c.commit()
-
     c.close()
