@@ -85,10 +85,10 @@ def show_ajuda():
     st.header("🧪 Receitas (BOM)")
 
     st.markdown("""
-    Receita (BOM – Bill of Materials) define **como um produto é produzido**.
+    Receita (BOM – Bill of Materials) define como um produto e produzido.
 
     Ela informa:
-    - Qual produto final será produzido
+    - Qual produto final sera produzido
     - Quais materias-primas serao consumidas
     - Em qual quantidade
     """)
@@ -105,10 +105,9 @@ def show_ajuda():
     """)
 
     st.info(
-        "✅ Sempre que a Receita é criada, alterada ou excluida, "
+        "✅ Sempre que a Receita e criada, alterada ou excluida, "
         "o custo do produto final e recalculado automaticamente."
     )
-
 
         
     # =========================
