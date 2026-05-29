@@ -29,7 +29,6 @@ def users_conn():
 # =========================
 
 def get_user_db():
-
     usuario = st.session_state.get("usuario", "default")
     return os.path.join(DATABASE_DIR, f"{usuario}.db")
 
@@ -47,7 +46,7 @@ def query(sql, params=()):
         df = pd.read_sql_query(sql, c, params=params)
         c.close()
         return df
-    except:
+    except Exception as e:
         return pd.DataFrame()
 
 # =========================
@@ -80,12 +79,11 @@ def init_users():
     """)
 
     cur.execute(
-        "SELECT * FROM usuarios WHERE usuario=?",
+        "SELECT 1 FROM usuarios WHERE usuario=?",
         ("admin",)
     )
 
     if not cur.fetchone():
-
         senha = bcrypt.hashpw(
             "123456".encode(),
             bcrypt.gensalt()
@@ -132,6 +130,17 @@ def init_db():
     )
     """)
 
+    # PRODUCOES ✅ (ESTAVA FALTANDO)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS producoes(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        produto_final INTEGER,
+        quantidade REAL,
+        custo REAL,
+        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # VENDAS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS vendas(
@@ -175,7 +184,8 @@ def recalcular_custo_produto(produto_final_id):
         SELECT 
             SUM(r.quantidade * p.custo)
         FROM receitas r
-        JOIN produtos p ON r.materia_prima = p.id
+        JOIN produtos p
+            ON r.materia_prima = p.id
         WHERE r.produto_final = ?
     """, (produto_final_id,)).fetchone()[0]
 
