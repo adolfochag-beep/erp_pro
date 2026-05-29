@@ -7,7 +7,7 @@ def show_producao():
     st.title("🏭 Produção com Receita Automática")
 
 
-    st.title("🏭 Produção com Receita Automática")
+    
     # =========================
     # PRODUTOS FINAIS
     # =========================
