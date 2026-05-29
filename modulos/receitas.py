@@ -4,10 +4,8 @@ from database.db import query, execute, recalcular_custo_produto
 
 def show_receitas():
 
-    # ⚠️ TEMPORÁRIO — corrigir schema antigo
-    execute("DROP TABLE IF EXISTS receitas")
-
     st.title("📚 Receitas (BOM)")
+
     produtos = query("SELECT * FROM produtos")
 
     if produtos.empty:
