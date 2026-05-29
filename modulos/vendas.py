@@ -5,9 +5,23 @@ def show_vendas():
 
     st.subheader("🛒 Vendas")
 
-    produtos = query("SELECT * FROM produtos WHERE tipo='Produto Final'")
+    produtos = query("SELECT * FROM produtos")
 
-    # valida produtos
+    if produtos.empty:
+        st.warning("Nenhum produto cadastrado.")
+        return
+
+    produtos["tipo"] = (
+        produtos["tipo"]
+        .astype(str)
+        .str.lower()
+        .str.strip()
+    )
+
+    produtos = produtos[
+        produtos["tipo"] == "produto final"
+    ]
+
     if produtos.empty:
         st.warning("Nenhum produto final cadastrado.")
         return
@@ -17,16 +31,9 @@ def show_vendas():
         produtos["nome"].tolist()
     )
 
-    produto_filtrado = produtos[
+    info = produtos[
         produtos["nome"] == produto_nome
-    ]
-
-    # valida filtro
-    if produto_filtrado.empty:
-        st.error("Produto não encontrado.")
-        return
-
-    info = produto_filtrado.iloc[0]
+    ].iloc[0]
 
     qtd = st.number_input(
         "Quantidade",
@@ -34,43 +41,100 @@ def show_vendas():
         value=1.0
     )
 
+    cliente = st.text_input("Cliente")
+
+    forma_pagamento = st.selectbox(
+        "Forma de Pagamento",
+        [
+            "Dinheiro",
+            "PIX",
+            "Cartão Débito",
+            "Cartão Crédito",
+            "Boleto"
+        ]
+    )
+
+    status_pagamento = st.selectbox(
+        "Status do Pagamento",
+        [
+            "Pago",
+            "Pendente"
+        ]
+    )
+
     if st.button("Vender"):
 
-        if qtd > info["estoque"]:
+        if qtd > float(info["estoque"]):
             st.error("Estoque insuficiente")
             return
 
-        total = qtd * info["venda"]
-        lucro = total - (qtd * info["custo"])
+        total = qtd * float(info["venda"])
+        lucro = total - (qtd * float(info["custo"]))
 
-        # baixa estoque
         execute(
-            "UPDATE produtos SET estoque = estoque - ? WHERE id=?",
-            (qtd, info["id"])
+            """
+            UPDATE produtos
+            SET estoque = estoque - ?
+            WHERE id = ?
+            """,
+            (qtd, int(info["id"]))
         )
 
-        # registra venda
         execute("""
             INSERT INTO vendas(
                 produto,
                 quantidade,
                 total,
-                lucro
+                lucro,
+                cliente,
+                forma_pagamento,
+                status_pagamento
             )
-            VALUES(?,?,?,?)
-        """, (
+            VALUES(?,?,?,?,?,?,?)
+        """,
+        (
             produto_nome,
             qtd,
             total,
-            lucro
+            lucro,
+            cliente,
+            forma_pagamento,
+            status_pagamento
         ))
 
-        st.success("✅ Venda realizada")
+        execute("""
+            INSERT INTO financeiro(
+                tipo,
+                descricao,
+                valor,
+                status
+            )
+            VALUES(?,?,?,?)
+        """,
+        (
+            "Receita",
+            f"Venda - {produto_nome}",
+            total,
+            status_pagamento
+        ))
+
+        st.success("✅ Venda realizada com sucesso!")
+        st.rerun()
 
     st.divider()
 
+    st.subheader("📋 Histórico de Vendas")
+
     vendas = query("""
-        SELECT *
+        SELECT
+            data,
+            produto,
+            quantidade,
+            total,
+            lucro,
+            cliente,
+            forma_pagamento,
+            status_pagamento
         FROM vendas
         ORDER BY id DESC
     """)
