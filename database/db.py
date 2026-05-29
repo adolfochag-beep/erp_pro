@@ -214,7 +214,29 @@ def init_db():
         data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+def recalcular_custo_produto(produto_final_id):
 
+    c = conn()
+    cur = c.cursor()
+
+    custo = cur.execute("""
+        SELECT 
+            SUM(r.quantidade * p.custo)
+        FROM receitas r
+        JOIN produtos p ON r.materia_prima = p.id
+        WHERE r.produto_final = ?
+    """, (produto_final_id,)).fetchone()[0]
+
+    custo = custo or 0
+
+    cur.execute("""
+        UPDATE produtos
+        SET custo = ?
+        WHERE id = ?
+    """, (custo, produto_final_id))
+
+    c.commit()
+    c.close()
     c.commit()
 
     c.close()
