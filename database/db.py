@@ -4,29 +4,14 @@ import streamlit as st
 import os
 import bcrypt
 
-# =========================
-# PASTA DATABASES
-# =========================
-
-BASE_DIR = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATABASE_DIR = os.path.join(BASE_DIR, "databases")
 os.makedirs(DATABASE_DIR, exist_ok=True)
-
-# =========================
-# BANCO CENTRAL DE USUÁRIOS
-# =========================
 
 USERS_DB = os.path.join(DATABASE_DIR, "usuarios.db")
 
 def users_conn():
     return sqlite3.connect(USERS_DB, check_same_thread=False)
-
-# =========================
-# BANCO POR USUÁRIO (EMPRESA)
-# =========================
 
 def get_user_db():
     usuario = st.session_state.get("usuario", "default")
@@ -35,10 +20,6 @@ def get_user_db():
 def conn():
     return sqlite3.connect(get_user_db(), check_same_thread=False)
 
-# =========================
-# QUERY
-# =========================
-
 @st.cache_data(ttl=60)
 def query(sql, params=()):
     try:
@@ -46,12 +27,8 @@ def query(sql, params=()):
         df = pd.read_sql_query(sql, c, params=params)
         c.close()
         return df
-    except Exception as e:
+    except:
         return pd.DataFrame()
-
-# =========================
-# EXECUTE
-# =========================
 
 def execute(sql, params=()):
     c = conn()
@@ -61,12 +38,7 @@ def execute(sql, params=()):
     c.close()
     st.cache_data.clear()
 
-# =========================
-# INIT USERS
-# =========================
-
 def init_users():
-
     c = users_conn()
     cur = c.cursor()
 
@@ -78,35 +50,18 @@ def init_users():
     )
     """)
 
-    cur.execute(
-        "SELECT 1 FROM usuarios WHERE usuario=?",
-        ("admin",)
-    )
-
+    cur.execute("SELECT 1 FROM usuarios WHERE usuario='admin'")
     if not cur.fetchone():
-        senha = bcrypt.hashpw(
-            "123456".encode(),
-            bcrypt.gensalt()
-        ).decode()
-
-        cur.execute("""
-        INSERT INTO usuarios(usuario, senha)
-        VALUES(?,?)
-        """, ("admin", senha))
+        senha = bcrypt.hashpw("123456".encode(), bcrypt.gensalt()).decode()
+        cur.execute("INSERT INTO usuarios(usuario, senha) VALUES(?,?)", ("admin", senha))
 
     c.commit()
     c.close()
 
-# =========================
-# INIT ERP (BANCO DA EMPRESA)
-# =========================
-
 def init_db():
-
     c = conn()
     cur = c.cursor()
 
-    # PRODUTOS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS produtos(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,7 +75,6 @@ def init_db():
     )
     """)
 
-    # RECEITAS (BOM)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS receitas(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -130,19 +84,17 @@ def init_db():
     )
     """)
 
-    # PRODUCOES
-cur.execute("""
-CREATE TABLE IF NOT EXISTS producoes(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    produto_final INTEGER,
-    quantidade REAL,
-    custo REAL,
-    status TEXT DEFAULT 'Ativa',
-    data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-""")
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS producoes(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        produto_final INTEGER,
+        quantidade REAL,
+        custo REAL,
+        status TEXT DEFAULT 'Ativa',
+        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
 
-    # VENDAS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS vendas(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -157,7 +109,6 @@ CREATE TABLE IF NOT EXISTS producoes(
     )
     """)
 
-    # FINANCEIRO
     cur.execute("""
     CREATE TABLE IF NOT EXISTS financeiro(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -172,31 +123,17 @@ CREATE TABLE IF NOT EXISTS producoes(
     c.commit()
     c.close()
 
-# =========================
-# CÁLCULO AUTOMÁTICO DE CUSTO (BOM)
-# =========================
-
 def recalcular_custo_produto(produto_final_id):
-
     c = conn()
     cur = c.cursor()
 
     custo = cur.execute("""
-        SELECT 
-            SUM(r.quantidade * p.custo)
+        SELECT SUM(r.quantidade * p.custo)
         FROM receitas r
-        JOIN produtos p
-            ON r.materia_prima = p.id
+        JOIN produtos p ON r.materia_prima = p.id
         WHERE r.produto_final = ?
-    """, (produto_final_id,)).fetchone()[0]
+    """, (produto_final_id,)).fetchone()[0] or 0
 
-    custo = custo or 0
-
-    cur.execute("""
-        UPDATE produtos
-        SET custo = ?
-        WHERE id = ?
-    """, (custo, produto_final_id))
-
+    cur.execute("UPDATE produtos SET custo=? WHERE id=?", (custo, produto_final_id))
     c.commit()
     c.close()
