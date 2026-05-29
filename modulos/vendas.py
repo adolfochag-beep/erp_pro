@@ -112,7 +112,7 @@ def show_vendas():
             VALUES(?,?,?,?)
         """,
         (
-            "Receita",
+            "Entrada",
             f"Venda - {produto_nome}",
             total,
             status_pagamento
