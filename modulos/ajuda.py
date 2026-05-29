@@ -80,34 +80,35 @@ def show_ajuda():
     # =========================
     # RECEITAS
     # =========================
-    with abas[1]:
+   with abas[1]:
 
-        st.header("🧪 Receitas (BOM)")
+    st.header("🧪 Receitas (BOM)")
 
-        st.markdown("""
-        Receita (BOM – Bill of Materials) define **como um produto é produzido**.
+    st.markdown("""
+    Receita (BOM – Bill of Materials) define **como um produto é produzido**.
 
-        Ela informa:
-        - Qual produto final será produzido
-        - Quais matérias‑primas serão consumidas
-        - Em qual quantidade
-        """)
+    Ela informa:
+    - Qual produto final será produzido
+    - Quais materias-primas serao consumidas
+    - Em qual quantidade
+    """)
 
-         st.subheader("📌 Exemplo")
+    st.subheader("📌 Exemplo")
 
-        st.markdown("""
-        Produto Final: Bolo  
+    st.markdown("""
+    Produto Final: Bolo
 
-        Matérias‑primas:
-        - 0,20 kg Farinha  
-        - 0,10 kg Açúcar  
-        - 3 UN Ovos  
-        """)
+    Materias-primas:
+    - 0.20 kg Farinha
+    - 0.10 kg Acucar
+    - 3 UN Ovos
+    """)
 
-        st.info("""
-        ✅ Sempre que a Receita é criada, alterada ou excluída:
-        - o custo do produto final é recalculado automaticamente
-        """)
+    st.info(
+        "✅ Sempre que a Receita é criada, alterada ou excluida, "
+        "o custo do produto final e recalculado automaticamente."
+    )
+
 
         
     # =========================
