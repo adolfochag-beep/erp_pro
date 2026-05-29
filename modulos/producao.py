@@ -4,6 +4,9 @@ from database.db import query, execute
 
 def show_producao():
 
+    # ⚠️ TEMPORÁRIO — corrigir estrutura antiga da tabela producoes
+    execute("DROP TABLE IF EXISTS producoes")
+
     st.subheader("🏭 Produção com Receita Automática")
 
     # =========================
