@@ -4,13 +4,10 @@ from database.db import query, execute
 
 def show_producao():
 
-    # ⚠️ TEMPORÁRIO — corrigir estrutura antiga da tabela producoes
-    execute("DROP TABLE IF EXISTS producoes")
-
     st.subheader("🏭 Produção com Receita Automática")
 
     # =========================
-    # PRODUTOS FINAIS
+    # PRODUZIR
     # =========================
     produtos = query("""
         SELECT *
@@ -39,11 +36,8 @@ def show_producao():
         step=1.0
     )
 
-    if st.button("Produzir"):
+    if st.button("✅ Produzir"):
 
-        # =========================
-        # BUSCA RECEITA PELO ID
-        # =========================
         receitas = query("""
             SELECT
                 r.quantidade,
@@ -61,64 +55,46 @@ def show_producao():
             st.error("Produto não possui receita cadastrada")
             return
 
-        # =========================
-        # VERIFICA ESTOQUE
-        # =========================
+        # Verifica estoque
         for _, r in receitas.iterrows():
-
             necessario = r["quantidade"] * qtd
-
             if r["estoque"] < necessario:
-                st.error(
-                    f"Estoque insuficiente de {r['materia_nome']}"
-                )
+                st.error(f"Estoque insuficiente de {r['materia_nome']}")
                 return
 
-        # =========================
-        # DESCONTA MATÉRIA-PRIMA
-        # =========================
+        # Desconta matéria‑prima
         custo_total = 0
-
         for _, r in receitas.iterrows():
-
             necessario = r["quantidade"] * qtd
-            novo_estoque = r["estoque"] - necessario
-
             execute("""
                 UPDATE produtos
-                SET estoque = ?
+                SET estoque = estoque - ?
                 WHERE id = ?
-            """, (novo_estoque, r["materia_id"]))
-
+            """, (necessario, r["materia_id"]))
             custo_total += r["custo"] * necessario
 
-        # =========================
-        # ATUALIZA PRODUTO FINAL
-        # =========================
-        novo_final = produto["estoque"] + qtd
-
+        # Atualiza produto final
         execute("""
             UPDATE produtos
-            SET estoque = ?
+            SET estoque = estoque + ?
             WHERE id = ?
-        """, (novo_final, produto_id))
+        """, (qtd, produto_id))
 
-        # =========================
-        # REGISTRA PRODUÇÃO
-        # =========================
+        # Registra produção
         execute("""
             INSERT INTO producoes(
                 produto_final,
                 quantidade,
-                custo
+                custo,
+                status
             )
-            VALUES (?,?,?)
-        """, (produto_id, qtd, custo_total))
+            VALUES (?,?,?,?)
+        """, (produto_id, qtd, custo_total, "Ativa"))
 
         st.success("✅ Produção realizada com sucesso!")
 
     # =========================
-    # HISTÓRICO DE PRODUÇÕES
+    # HISTÓRICO
     # =========================
     st.divider()
     st.subheader("📋 Histórico de Produções")
@@ -129,6 +105,7 @@ def show_producao():
             p.nome AS produto_final,
             pr.quantidade,
             pr.custo,
+            pr.status,
             pr.data
         FROM producoes pr
         LEFT JOIN produtos p
@@ -138,10 +115,73 @@ def show_producao():
 
     if producoes.empty:
         st.info("Nenhuma produção registrada")
-    else:
-        st.dataframe(
-            producoes,
-            use_container_width=True,
-            height=350,
-            hide_index=True
-        )
+        return
+
+    st.dataframe(
+        producoes,
+        use_container_width=True,
+        height=300,
+        hide_index=True
+    )
+
+    # =========================
+    # CANCELAR PRODUÇÃO
+    # =========================
+    st.divider()
+    st.subheader("❌ Cancelar Produção")
+
+    producoes_ativas = producoes[
+        producoes["status"] == "Ativa"
+    ]
+
+    if producoes_ativas.empty:
+        st.info("Nenhuma produção ativa para cancelar")
+        return
+
+    prod_id = st.selectbox(
+        "Selecione a produção",
+        producoes_ativas["id"]
+    )
+
+    if st.button("❌ Cancelar Produção"):
+
+        prod = producoes_ativas[
+            producoes_ativas["id"] == prod_id
+        ].iloc[0]
+
+        # Devolve produto final
+        execute("""
+            UPDATE produtos
+            SET estoque = estoque - ?
+            WHERE nome = ?
+        """, (prod["quantidade"], prod["produto_final"]))
+
+        # Devolve matéria‑prima
+        receitas = query("""
+            SELECT
+                r.quantidade,
+                p.id AS materia_id
+            FROM receitas r
+            JOIN produtos p
+                ON r.materia_prima = p.id
+            WHERE r.produto_final = (
+                SELECT produto_final FROM producoes WHERE id = ?
+            )
+        """, (prod_id,))
+
+        for _, r in receitas.iterrows():
+            execute("""
+                UPDATE produtos
+                SET estoque = estoque + ?
+                WHERE id = ?
+            """, (r["quantidade"] * prod["quantidade"], r["materia_id"]))
+
+        # Marca como cancelada
+        execute("""
+            UPDATE producoes
+            SET status = 'Cancelada'
+            WHERE id = ?
+        """, (prod_id,))
+
+        st.success("✅ Produção cancelada com sucesso")
+        st.rerun()
