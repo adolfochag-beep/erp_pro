@@ -4,10 +4,8 @@ from database.db import query, execute
 
 def show_producao():
 
-    st.title("🏭 Produção com Receita Automática")
+    st.subheader("🏭 Produção com Receita Automática")
 
-
-    
     # =========================
     # PRODUTOS FINAIS
     # =========================
@@ -33,7 +31,7 @@ def show_producao():
     produto_id = int(produto["id"])
 
     qtd = st.number_input(
-        "Quantidade",
+        "Quantidade a produzir",
         min_value=1.0,
         step=1.0
     )
@@ -115,3 +113,32 @@ def show_producao():
         """, (produto_id, qtd, custo_total))
 
         st.success("✅ Produção realizada com sucesso!")
+
+    # =========================
+    # HISTÓRICO DE PRODUÇÕES
+    # =========================
+    st.divider()
+    st.subheader("📋 Histórico de Produções")
+
+    producoes = query("""
+        SELECT
+            pr.id,
+            p.nome AS produto_final,
+            pr.quantidade,
+            pr.custo,
+            pr.data
+        FROM producoes pr
+        LEFT JOIN produtos p
+            ON pr.produto_final = p.id
+        ORDER BY pr.data DESC
+    """)
+
+    if producoes.empty:
+        st.info("Nenhuma produção registrada")
+    else:
+        st.dataframe(
+            producoes,
+            use_container_width=True,
+            height=350,
+            hide_index=True
+        )
