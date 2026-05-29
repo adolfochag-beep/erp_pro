@@ -130,16 +130,17 @@ def init_db():
     )
     """)
 
-    # PRODUCOES ✅ (ESTAVA FALTANDO)
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS producoes(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        produto_final INTEGER,
-        quantidade REAL,
-        custo REAL,
-        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
+    # PRODUCOES
+cur.execute("""
+CREATE TABLE IF NOT EXISTS producoes(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    produto_final INTEGER,
+    quantidade REAL,
+    custo REAL,
+    status TEXT DEFAULT 'Ativa',
+    data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
 
     # VENDAS
     cur.execute("""
