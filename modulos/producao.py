@@ -4,8 +4,8 @@ from database.db import query, execute
 
 def show_producao():
 
-    # ⚠️ TEMPORÁRIO — corrigir schema antigo da tabela producoes
-    execute("DROP TABLE IF EXISTS producoes")
+    st.title("🏭 Produção com Receita Automática")
+
 
     st.title("🏭 Produção com Receita Automática")
     # =========================
