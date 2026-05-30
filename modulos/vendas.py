@@ -65,64 +65,63 @@ def show_vendas():
 
     if st.button("Vender"):
 
-        if qtd > float(info["estoque"]):
-            st.error("Estoque insuficiente")
-            return
+    if qtd > float(info["estoque"]):
+        st.error("Estoque insuficiente")
+        return
 
-        total = qtd * float(info["venda"])
-        lucro = total - (qtd * float(info["custo"]))
+    total = qtd * float(info["venda"])
+    lucro = total - (qtd * float(info["custo"]))
 
-        execute(
-            """
-            UPDATE produtos
-            SET estoque = estoque - ?
-            WHERE id = ?
-            """,
-            (qtd, int(info["id"]))
-        )
-
-        execute("""
-            INSERT INTO vendas(
-                produto,
-                quantidade,
-                total,
-                lucro,
-                cliente,
-                forma_pagamento,
-                status_pagamento
-            )
-            VALUES(?,?,?,?,?,?,?)
+    execute(
+        """
+        UPDATE produtos
+        SET estoque = estoque - ?
+        WHERE id = ?
         """,
-        (
-            produto_nome,
-            qtd,
+        (qtd, int(info["id"]))
+    )
+
+    execute("""
+        INSERT INTO vendas(
+            produto,
+            quantidade,
             total,
             lucro,
             cliente,
             forma_pagamento,
             status_pagamento
-        ))
+        )
+        VALUES(?,?,?,?,?,?,?)
+    """,
+    (
+        produto_nome,
+        qtd,
+        total,
+        lucro,
+        cliente,
+        forma_pagamento,
+        status_pagamento
+    ))
 
- if status_pagamento == "Pago":
-execute("""
-INSERT INTO financeiro(
-    tipo,
-    descricao,
-    valor,
-    status
-)
-VALUES(?,?,?,?)
-""",
-(
-    "Entrada",
-    f"Venda - {produto_nome} ({forma_pagamento})",
-    total,
-    status_pagamento
-))
+    # REGISTRA NO FINANCEIRO
+    execute("""
+        INSERT INTO financeiro(
+            tipo,
+            descricao,
+            valor,
+            status
+        )
+        VALUES(?,?,?,?)
+    """,
+    (
+        "Entrada",
+        f"Venda - {produto_nome} ({forma_pagamento})",
+        total,
+        status_pagamento
+    ))
 
-        st.success("✅ Venda realizada com sucesso!")
-        st.rerun()
-
+    st.success("✅ Venda realizada com sucesso!")
+    st.rerun()
     st.divider()
 
     st.subheader("📋 Histórico de Vendas")
