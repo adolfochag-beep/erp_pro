@@ -95,25 +95,26 @@ def init_db():
     )
     """)
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS vendas(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        produto TEXT,
-        quantidade REAL,
-        total REAL,
-        lucro REAL,
-        cliente TEXT,
-        forma_pagamento TEXT,
-        status_pagamento TEXT,
-        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-    try:
+   cur.execute("""
+CREATE TABLE IF NOT EXISTS vendas(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    produto TEXT,
+    quantidade REAL,
+    total REAL,
+    lucro REAL,
+    cliente TEXT,
+    forma_pagamento TEXT,
+    status_pagamento TEXT,
+    data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+try:
     cur.execute(
         "ALTER TABLE vendas ADD COLUMN status TEXT DEFAULT 'Ativa'"
     )
-except:
-    pass
+except Exception:
+    pass 
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS financeiro(
