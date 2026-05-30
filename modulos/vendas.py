@@ -1,6 +1,7 @@
 import streamlit as st
 from database.db import query, execute
 
+
 def show_vendas():
 
     st.subheader("🛒 Vendas")
@@ -104,21 +105,22 @@ def show_vendas():
 
         if status_pagamento == "Pago":
 
-    execute("""
-    INSERT INTO financeiro(
-        tipo,
-        descricao,
-        valor,
-        status
-    )
-    VALUES(?,?,?,?)
-    """,
-    (
-        "Entrada",
-        f"Venda - {produto_nome} ({forma_pagamento})",
-        total,
-        "OK"
-    ))
+            execute("""
+                INSERT INTO financeiro(
+                    tipo,
+                    descricao,
+                    valor,
+                    status
+                )
+                VALUES(?,?,?,?)
+            """,
+            (
+                "Entrada",
+                f"Venda - {produto_nome} ({forma_pagamento})",
+                total,
+                "OK"
+            ))
+
         st.success("✅ Venda realizada com sucesso!")
         st.rerun()
 
@@ -128,6 +130,7 @@ def show_vendas():
 
     vendas = query("""
         SELECT
+            id,
             data,
             produto,
             quantidade,
@@ -135,15 +138,116 @@ def show_vendas():
             lucro,
             cliente,
             forma_pagamento,
-            status_pagamento
+            status_pagamento,
+            status
         FROM vendas
         ORDER BY id DESC
     """)
 
     if vendas.empty:
+
         st.info("Nenhuma venda registrada.")
+
     else:
+
         st.dataframe(
             vendas,
             use_container_width=True
         )
+
+        st.divider()
+
+        st.subheader("↩️ Estornar Venda")
+
+        vendas_ativas = vendas[
+            vendas["status"] == "Ativa"
+        ]
+
+        if vendas_ativas.empty:
+
+            st.info(
+                "Nenhuma venda disponível para estorno."
+            )
+
+        else:
+
+            venda_id = st.selectbox(
+                "Selecione a venda",
+                vendas_ativas["id"].tolist()
+            )
+
+            if st.button("Estornar Venda"):
+
+                venda = vendas_ativas[
+                    vendas_ativas["id"] == venda_id
+                ].iloc[0]
+
+                produto = query(
+                    """
+                    SELECT *
+                    FROM produtos
+                    WHERE nome = ?
+                    """,
+                    (venda["produto"],)
+                )
+
+                if produto.empty:
+
+                    st.error(
+                        "Produto não encontrado."
+                    )
+
+                else:
+
+                    produto_id = int(
+                        produto.iloc[0]["id"]
+                    )
+
+                    quantidade = float(
+                        venda["quantidade"]
+                    )
+
+                    execute(
+                        """
+                        UPDATE produtos
+                        SET estoque = estoque + ?
+                        WHERE id = ?
+                        """,
+                        (
+                            quantidade,
+                            produto_id
+                        )
+                    )
+
+                    execute(
+                        """
+                        UPDATE vendas
+                        SET status = 'Estornada'
+                        WHERE id = ?
+                        """,
+                        (venda_id,)
+                    )
+
+                    if venda["status_pagamento"] == "Pago":
+
+                        execute("""
+                            INSERT INTO financeiro(
+                                tipo,
+                                descricao,
+                                valor,
+                                status
+                            )
+                            VALUES(?,?,?,?)
+                        """,
+                        (
+                            "Saída",
+                            f"Estorno Venda #{venda_id}",
+                            float(venda["total"]),
+                            "OK"
+                        ))
+
+                    st.success(
+                        "✅ Venda estornada com sucesso."
+                    )
+
+                    st.rerun()
