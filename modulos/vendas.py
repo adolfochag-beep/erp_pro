@@ -64,6 +64,29 @@ def show_vendas():
     )
 
     if st.button("Vender"):
+    execute("""
+INSERT INTO vendas(...)
+VALUES(...)
+""")
+
+execute("""
+INSERT INTO financeiro(
+    tipo,
+    descricao,
+    valor,
+    status
+)
+VALUES(?,?,?,?)
+""",
+(
+    "Entrada",
+    f"Venda - {produto_nome} ({forma_pagamento})",
+    total,
+    status_pagamento
+))
+
+st.success("✅ Venda realizada com sucesso!")
+st.rerun()
 
     if qtd > float(info["estoque"]):
         st.error("Estoque insuficiente")
