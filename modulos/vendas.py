@@ -103,23 +103,22 @@ def show_vendas():
             status_pagamento
         ))
 
-        if status_pagamento == "Pago":
-
-            execute("""
-                INSERT INTO financeiro(
-                    tipo,
-                    descricao,
-                    valor,
-                    status
-                )
-                VALUES(?,?,?,?)
-            """,
-            (
-                "Entrada",
-                f"Venda - {produto_nome} ({forma_pagamento})",
-                total,
-                "OK"
-            ))
+ if status_pagamento == "Pago":
+execute("""
+INSERT INTO financeiro(
+    tipo,
+    descricao,
+    valor,
+    status
+)
+VALUES(?,?,?,?)
+""",
+(
+    "Entrada",
+    f"Venda - {produto_nome} ({forma_pagamento})",
+    total,
+    status_pagamento
+))
 
         st.success("✅ Venda realizada com sucesso!")
         st.rerun()
