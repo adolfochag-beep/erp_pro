@@ -1,15 +1,18 @@
 import streamlit as st
 import bcrypt
-from database.db import query, execute
+import shutil
+import os
+
+from database.db import (
+    query,
+    execute,
+    get_user_db
+)
 
 
 def show_config():
 
     st.title("⚙️ Configurações")
-
-    # =========================
-    # ABAS
-    # =========================
 
     aba1, aba2 = st.tabs([
         "🔐 Segurança",
@@ -17,7 +20,7 @@ def show_config():
     ])
 
     # =========================
-    # SENHAS
+    # SEGURANÇA
     # =========================
 
     with aba1:
@@ -28,40 +31,63 @@ def show_config():
 
         with st.form("trocar_senha"):
 
-            senha_atual = st.text_input("Senha atual", type="password")
-            nova_senha = st.text_input("Nova senha", type="password")
-            confirmar = st.text_input("Confirmar nova senha", type="password")
+            senha_atual = st.text_input(
+                "Senha atual",
+                type="password"
+            )
 
-            salvar = st.form_submit_button("Salvar")
+            nova_senha = st.text_input(
+                "Nova senha",
+                type="password"
+            )
+
+            confirmar = st.text_input(
+                "Confirmar nova senha",
+                type="password"
+            )
+
+            salvar = st.form_submit_button(
+                "Salvar"
+            )
 
             if salvar:
 
                 dados = query(
-                    "SELECT * FROM usuarios WHERE usuario=?",
+                    """
+                    SELECT *
+                    FROM usuarios
+                    WHERE usuario=?
+                    """,
                     (usuario,)
                 )
 
                 if dados.empty:
-                    st.error("Usuário não encontrado")
+                    st.error(
+                        "Usuário não encontrado."
+                    )
                     return
 
                 senha_hash = dados.iloc[0]["senha"]
 
-                # valida senha atual
                 if not bcrypt.checkpw(
                     senha_atual.encode(),
                     senha_hash.encode()
                 ):
-                    st.error("Senha atual incorreta")
+                    st.error(
+                        "Senha atual incorreta."
+                    )
                     return
 
-                # valida nova senha
                 if nova_senha != confirmar:
-                    st.warning("Senhas não coincidem")
+                    st.warning(
+                        "As senhas não coincidem."
+                    )
                     return
 
                 if len(nova_senha) < 4:
-                    st.warning("Senha muito curta (mínimo 4 caracteres)")
+                    st.warning(
+                        "A senha deve ter pelo menos 4 caracteres."
+                    )
                     return
 
                 nova_hash = bcrypt.hashpw(
@@ -70,14 +96,23 @@ def show_config():
                 ).decode()
 
                 execute(
-                    "UPDATE usuarios SET senha=? WHERE usuario=?",
-                    (nova_hash, usuario)
+                    """
+                    UPDATE usuarios
+                    SET senha=?
+                    WHERE usuario=?
+                    """,
+                    (
+                        nova_hash,
+                        usuario
+                    )
                 )
 
-                st.success("✅ Senha atualizada com sucesso")
+                st.success(
+                    "✅ Senha atualizada com sucesso."
+                )
 
     # =========================
-    # CONFIGURACOES DO SISTEMA
+    # SISTEMA
     # =========================
 
     with aba2:
@@ -85,33 +120,61 @@ def show_config():
         st.subheader("📌 Informações do Sistema")
 
         st.info("""
-        ERP PRO MAX
-        
-        ✔ Controle de estoque  
-        ✔ Produção  
-        ✔ Vendas  
-        ✔ Financeiro  
-        ✔ Compras  
+ERP PRO MAX
+
+✔ Controle de Estoque
+✔ Produção
+✔ Receitas (BOM)
+✔ Vendas
+✔ Financeiro
+✔ Compras
+✔ Multiusuário
         """)
 
         st.divider()
 
         st.subheader("💾 Backup")
 
-        if st.button("Gerar backup do banco"):
+        banco_usuario = get_user_db()
+
+        st.caption(
+            f"Banco atual: {os.path.basename(banco_usuario)}"
+        )
+
+        if st.button("Gerar Backup"):
+
+            if not os.path.exists(banco_usuario):
+
+                st.error(
+                    "Banco de dados não encontrado."
+                )
+
+                return
+
             from datetime import datetime
-            import shutil
 
-            nome = datetime.now().strftime('%Y%m%d_%H%M%S')
-            arquivo = f'backup_{nome}.db'
+            nome_backup = (
+                f"backup_"
+                f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+            )
 
-            shutil.copy("erp_v3.db", arquivo)
+            shutil.copy(
+                banco_usuario,
+                nome_backup
+            )
 
-            st.success("✅ Backup gerado com sucesso")
+            st.success(
+                "✅ Backup gerado com sucesso."
+            )
 
-            with open(arquivo, "rb") as f:
+            with open(
+                nome_backup,
+                "rb"
+            ) as f:
+
                 st.download_button(
-                    "📥 Baixar backup",
-                    f,
-                    file_name=arquivo
+                    label="📥 Baixar Backup",
+                    data=f,
+                    file_name=nome_backup,
+                    mime="application/octet-stream"
                 )
