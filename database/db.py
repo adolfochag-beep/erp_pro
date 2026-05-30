@@ -108,6 +108,12 @@ def init_db():
         data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    try:
+    cur.execute(
+        "ALTER TABLE vendas ADD COLUMN status TEXT DEFAULT 'Ativa'"
+    )
+except:
+    pass
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS financeiro(
