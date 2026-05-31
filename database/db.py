@@ -10,15 +10,19 @@ os.makedirs(DATABASE_DIR, exist_ok=True)
 
 USERS_DB = os.path.join(DATABASE_DIR, "usuarios.db")
 
+
 def users_conn():
     return sqlite3.connect(USERS_DB, check_same_thread=False)
+
 
 def get_user_db():
     usuario = st.session_state.get("usuario", "default")
     return os.path.join(DATABASE_DIR, f"{usuario}.db")
 
+
 def conn():
     return sqlite3.connect(get_user_db(), check_same_thread=False)
+
 
 @st.cache_data(ttl=60)
 def query(sql, params=()):
@@ -27,8 +31,9 @@ def query(sql, params=()):
         df = pd.read_sql_query(sql, c, params=params)
         c.close()
         return df
-    except:
+    except Exception:
         return pd.DataFrame()
+
 
 def execute(sql, params=()):
     c = conn()
@@ -37,6 +42,7 @@ def execute(sql, params=()):
     c.commit()
     c.close()
     st.cache_data.clear()
+
 
 def init_users():
     c = users_conn()
@@ -50,15 +56,27 @@ def init_users():
     )
     """)
 
-    cur.execute("SELECT 1 FROM usuarios WHERE usuario='admin'")
+    cur.execute(
+        "SELECT 1 FROM usuarios WHERE usuario='admin'"
+    )
+
     if not cur.fetchone():
-        senha = bcrypt.hashpw("123456".encode(), bcrypt.gensalt()).decode()
-        cur.execute("INSERT INTO usuarios(usuario, senha) VALUES(?,?)", ("admin", senha))
+        senha = bcrypt.hashpw(
+            "123456".encode(),
+            bcrypt.gensalt()
+        ).decode()
+
+        cur.execute(
+            "INSERT INTO usuarios(usuario, senha) VALUES(?,?)",
+            ("admin", senha)
+        )
 
     c.commit()
     c.close()
 
+
 def init_db():
+
     c = conn()
     cur = c.cursor()
 
@@ -95,7 +113,7 @@ def init_db():
     )
     """)
 
-       cur.execute("""
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS vendas(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         produto TEXT,
@@ -130,17 +148,24 @@ def init_db():
     c.commit()
     c.close()
 
+
 def recalcular_custo_produto(produto_final_id):
+
     c = conn()
     cur = c.cursor()
 
     custo = cur.execute("""
         SELECT SUM(r.quantidade * p.custo)
         FROM receitas r
-        JOIN produtos p ON r.materia_prima = p.id
+        JOIN produtos p
+            ON r.materia_prima = p.id
         WHERE r.produto_final = ?
     """, (produto_final_id,)).fetchone()[0] or 0
 
-    cur.execute("UPDATE produtos SET custo=? WHERE id=?", (custo, produto_final_id))
+    cur.execute(
+        "UPDATE produtos SET custo=? WHERE id=?",
+        (custo, produto_final_id)
+    )
+
     c.commit()
     c.close()
