@@ -12,7 +12,6 @@ def show_vendas():
         st.warning("Nenhum produto cadastrado.")
         return
 
-    # Normaliza tipo
     produtos["tipo"] = (
         produtos["tipo"]
         .astype(str)
@@ -37,6 +36,8 @@ def show_vendas():
         produtos["nome"] == produto_nome
     ].iloc[0]
 
+    produto_id = int(info["id"])  # ✅ NOVO
+
     qtd = st.number_input(
         "Quantidade",
         min_value=1,
@@ -60,7 +61,6 @@ def show_vendas():
 
     if st.button("Vender"):
 
-        # ✅ CORREÇÃO: operador correto
         if qtd > float(info["estoque"]):
             st.error("Estoque insuficiente")
             return
@@ -73,13 +73,14 @@ def show_vendas():
                 SET estoque = estoque - ?
                 WHERE id = ?
                 """,
-                (qtd, int(info["id"]))
+                (qtd, produto_id)
             )
 
-            # ✅ Registra venda
+            # ✅ VENDA COM ID
             execute(
                 """
                 INSERT INTO vendas(
+                    produto_id,
                     produto,
                     quantidade,
                     total,
@@ -89,9 +90,10 @@ def show_vendas():
                     status_pagamento,
                     status
                 )
-                VALUES(?,?,?,?,?,?,?,?)
+                VALUES(?,?,?,?,?,?,?,?,?)
                 """,
                 (
+                    produto_id,
                     produto_nome,
                     qtd,
                     total,
@@ -103,7 +105,7 @@ def show_vendas():
                 )
             )
 
-            # ✅ Financeiro (só se pago)
+            # ✅ Financeiro
             if status_pagamento == "Pago":
                 execute(
                     """
@@ -136,114 +138,86 @@ def show_vendas():
     st.divider()
     st.subheader("📋 Histórico de Vendas")
 
-    vendas = query("""
-        SELECT *
-        FROM vendas
-        ORDER BY id DESC
-    """)
+    vendas = query("SELECT * FROM vendas ORDER BY id DESC")
 
     if vendas.empty:
-
         st.info("Nenhuma venda registrada.")
+        return
 
-    else:
+    st.dataframe(vendas, use_container_width=True)
 
-        st.dataframe(vendas, use_container_width=True)
+    # =========================
+    # ESTORNO (CORRIGIDO)
+    # =========================
 
-        # =========================
-        # ESTORNO
-        # =========================
+    st.divider()
+    st.subheader("↩️ Estornar Venda")
 
-        st.divider()
-        st.subheader("↩️ Estornar Venda")
+    vendas_ativas = vendas[vendas["status"] == "Ativa"]
 
-        if "status" not in vendas.columns:
-            st.warning("Coluna 'status' não encontrada.")
-            return
+    if vendas_ativas.empty:
+        st.info("Nenhuma venda disponível para estorno.")
+        return
 
-        vendas_ativas = vendas[
-            vendas["status"] == "Ativa"
-        ]
+    venda_id = st.selectbox(
+        "Selecione a venda",
+        vendas_ativas["id"].tolist()
+    )
 
-        if vendas_ativas.empty:
+    if st.button("Estornar Venda", key="estorno"):
 
-            st.info("Nenhuma venda disponível para estorno.")
+        venda = vendas_ativas[
+            vendas_ativas["id"] == venda_id
+        ].iloc[0]
 
-        else:
+        produto_id = int(venda["produto_id"])  # ✅ AGORA CORRETO
 
-            venda_id = st.selectbox(
-                "Selecione a venda",
-                vendas_ativas["id"].tolist()
+        quantidade = float(venda["quantidade"])
+
+        try:
+            # ✅ devolve estoque
+            execute(
+                """
+                UPDATE produtos
+                SET estoque = estoque + ?
+                WHERE id = ?
+                """,
+                (quantidade, produto_id)
             )
 
-            if st.button("Estornar Venda"):
+            # ✅ marca estornada
+            execute(
+                """
+                UPDATE vendas
+                SET status = 'Estornada'
+                WHERE id = ?
+                """,
+                (venda_id,)
+            )
 
-                venda = vendas_ativas[
-                    vendas_ativas["id"] == venda_id
-                ].iloc[0]
+            # ✅ financeiro
+            if venda["status_pagamento"] == "Pago":
 
-                produto = query(
+                execute(
                     """
-                    SELECT *
-                    FROM produtos
-                    WHERE nome = ?
+                    INSERT INTO financeiro(
+                        tipo,
+                        descricao,
+                        valor,
+                        status
+                    )
+                    VALUES(?,?,?,?)
                     """,
-                    (venda["produto"],)
+                    (
+                        "Saída",
+                        f"Estorno Venda #{venda_id}",
+                        float(venda["total"]),
+                        "OK"
+                    )
                 )
 
-                if produto.empty:
+            st.success("✅ Venda estornada com sucesso.")
+            st.rerun()
 
-                    st.error("Produto não encontrado.")
-
-                else:
-
-                    produto_id = int(produto.iloc[0]["id"])
-                    quantidade = float(venda["quantidade"])
-
-                    try:
-                        # ✅ Devolve estoque
-                        execute(
-                            """
-                            UPDATE produtos
-                            SET estoque = estoque + ?
-                            WHERE id = ?
-                            """,
-                            (quantidade, produto_id)
-                        )
-
-                        # ✅ Marca como estornada
-                        execute(
-                            """
-                            UPDATE vendas
-                            SET status = 'Estornada'
-                            WHERE id = ?
-                            """,
-                            (venda_id,)
-                        )
-
-                        # ✅ Financeiro (saída)
-                        if venda["status_pagamento"] == "Pago":
-
-                            execute(
-                                """
-                                INSERT INTO financeiro(
-                                    tipo,
-                                    descricao,
-                                    valor,
-                                    status
-                                )
-                                VALUES(?,?,?,?)
-                                """,
-                                (
-                                    "Saída",
-                                    f"Estorno Venda #{venda_id}",
-                                    float(venda["total"]),
-                                    "OK"
-                                )
-                            )
-
-                        st.success("✅ Venda estornada com sucesso.")
-                        st.rerun()
-
-                    except Exception as e:
-                        st.error(f"Erro ao estornar: {e}")
+        except Exception as e:
+            st.error(f"Erro ao estornar: {e}")
