@@ -32,7 +32,6 @@ def show_dashboard():
             vendas = vendas[vendas["status"] != "Estornada"]
 
     if not produtos.empty:
-
         produtos["estoque"] = pd.to_numeric(produtos["estoque"], errors="coerce")
         produtos["estoque_min"] = pd.to_numeric(produtos["estoque_min"], errors="coerce")
         produtos["custo"] = pd.to_numeric(produtos["custo"], errors="coerce")
@@ -41,10 +40,19 @@ def show_dashboard():
         financeiro["valor"] = pd.to_numeric(financeiro["valor"], errors="coerce")
 
     # =========================
-    # INDICADORES
+    # INDICADORES (CORRIGIDO)
     # =========================
 
-    faturamento = vendas["total"].sum() if not vendas.empty else 0
+    faturamento_total = vendas["total"].sum() if not vendas.empty else 0
+
+    faturamento_pago = vendas[
+        vendas.get("status_pagamento", "") == "Pago"
+    ]["total"].sum() if not vendas.empty else 0
+
+    a_receber = vendas[
+        vendas.get("status_pagamento", "") == "Pendente"
+    ]["total"].sum() if not vendas.empty else 0
+
     lucro = vendas["lucro"].sum() if not vendas.empty else 0
 
     total_produtos = len(produtos) if not produtos.empty else 0
@@ -75,25 +83,27 @@ def show_dashboard():
         if not produtos.empty else 0
     )
 
-    margem = (lucro / faturamento) * 100 if faturamento > 0 else 0
+    margem = (lucro / faturamento_total) * 100 if faturamento_total > 0 else 0
 
     # =========================
-    # CARDS
+    # CARDS PRINCIPAIS (NOVO)
     # =========================
 
     c1, c2, c3, c4 = st.columns(4)
 
-    c1.metric("💰 Faturamento", f"R$ {faturamento:,.2f}")
-    c2.metric("📈 Lucro", f"R$ {lucro:,.2f}")
-    c3.metric("💵 Caixa", f"R$ {saldo:,.2f}")
-    c4.metric("📦 Valor Estoque", f"R$ {valor_estoque:,.2f}")
+    c1.metric("💰 Faturamento Total", f"R$ {faturamento_total:,.2f}")
+    c2.metric("✅ Recebido", f"R$ {faturamento_pago:,.2f}")
+    c3.metric("⏳ A Receber", f"R$ {a_receber:,.2f}")
+    c4.metric("📈 Lucro", f"R$ {lucro:,.2f}")
 
     c5, c6, c7, c8 = st.columns(4)
 
-    c5.metric("📦 Produtos", total_produtos)
-    c6.metric("⚠️ Estoque Crítico", estoque_baixo, f"{percentual_critico:.1f}%")
-    c7.metric("📈 Margem", f"{margem:.1f}%")
-    c8.metric("🛒 Comprar", estoque_baixo)
+    c5.metric("💵 Caixa", f"R$ {saldo:,.2f}")
+    c6.metric("📦 Produtos", total_produtos)
+    c7.metric("⚠️ Estoque Crítico", estoque_baixo, f"{percentual_critico:.1f}%")
+    c8.metric("📦 Valor Estoque", f"R$ {valor_estoque:,.2f}")
+
+    st.metric("📊 Margem", f"{margem:.1f}%")
 
     # =========================
     # VENDAS POR PRODUTO
@@ -159,7 +169,6 @@ def show_dashboard():
             colunas.append("cliente")
 
         ultimas = vendas.sort_values(by="data", ascending=False).head(10)
-
         st.dataframe(ultimas[colunas], use_container_width=True)
 
     # =========================
@@ -192,7 +201,6 @@ def show_dashboard():
 
         if "produto_final" in receitas.columns:
             usados = receitas["produto_final"].unique()
-
             sem_receita = finais[~finais["id"].isin(usados)]
 
             if sem_receita.empty:
