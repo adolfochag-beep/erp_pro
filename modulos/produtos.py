@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from database.db import query, execute
 
 
@@ -25,25 +26,13 @@ def show_produtos():
             ["UN", "KG", "L"]
         )
 
-        estoque = st.number_input(
-            "Estoque",
-            min_value=0.0,
-            value=0.0
-        )
+        estoque = st.number_input("Estoque", min_value=0.0, value=0.0)
 
-        estoque_min = st.number_input(
-            "Estoque Mínimo",
-            min_value=0.0,
-            value=0.0
-        )
+        estoque_min = st.number_input("Estoque Mínimo", min_value=0.0, value=0.0)
 
-        # ✅ AGORA FUNCIONA EM TEMPO REAL
+        # ✅ CUSTO DINÂMICO
         if tipo == "Matéria Prima":
-            custo = st.number_input(
-                "Custo",
-                min_value=0.0,
-                value=0.0
-            )
+            custo = st.number_input("Custo", min_value=0.0, value=0.0)
         else:
             custo = st.number_input(
                 "Custo (automático)",
@@ -52,11 +41,7 @@ def show_produtos():
             )
             st.info("Custo calculado automaticamente pela receita.")
 
-        venda = st.number_input(
-            "Preço Venda",
-            min_value=0.0,
-            value=0.0
-        )
+        venda = st.number_input("Preço Venda", min_value=0.0, value=0.0)
 
         salvar = st.form_submit_button("Salvar")
 
@@ -118,20 +103,63 @@ def show_produtos():
         st.info("Nenhum produto cadastrado.")
         return
 
+    # ✅ TRATAMENTO
+    produtos["estoque"] = pd.to_numeric(produtos["estoque"], errors="coerce")
+    produtos["estoque_min"] = pd.to_numeric(produtos["estoque_min"], errors="coerce")
+    produtos["custo"] = pd.to_numeric(produtos["custo"], errors="coerce")
+    produtos["venda"] = pd.to_numeric(produtos["venda"], errors="coerce")
+
+    # ✅ STATUS DE ESTOQUE
     produtos["Status"] = produtos.apply(
-        lambda x:
-        "⚠️ Baixo"
-        if float(x["estoque"]) <= float(x["estoque_min"])
+        lambda x: "⚠️ Baixo"
+        if x["estoque"] <= x["estoque_min"]
         else "✅ OK",
         axis=1
     )
 
+    # ✅ RENOMEAR COLUNAS (visual melhor)
+    produtos = produtos.rename(columns={
+        "nome": "Produto",
+        "tipo": "Tipo",
+        "unidade": "Unidade",
+        "estoque": "Estoque",
+        "estoque_min": "Estoque Mín",
+        "custo": "Custo (R$)",
+        "venda": "Venda (R$)"
+    })
+
     st.subheader("📋 Produtos")
+
+    # ✅ FUNÇÃO DE ESTILO
+    def destacar_linha(row):
+
+        if row["Status"] == "⚠️ Baixo":
+            return ["background-color: #fee2e2"] * len(row)
+        else:
+            return [""] * len(row)
+
+    # ✅ TABELA MELHORADA
+    st.dataframe(
+        produtos.style
+        .apply(destacar_linha, axis=1)
+        .format({
+            "Custo (R$)": "R$ {:,.2f}",
+            "Venda (R$)": "R$ {:,.2f}"
+        }),
+        use_container_width=True,
+        height=450
+    )
+
+    # =========================
+    # EDIÇÃO
+    # =========================
+
+    st.subheader("✏️ Editar Produtos")
 
     edited_df = st.data_editor(
         produtos,
         use_container_width=True,
-        height=450,
+        height=300,
         disabled=["id", "Status"]
     )
 
@@ -152,13 +180,13 @@ def show_produtos():
                 WHERE id=?
             """,
             (
-                row["nome"],
-                row["tipo"],
-                row["unidade"],
-                row["estoque"],
-                row["estoque_min"],
-                row["custo"],
-                row["venda"],
+                row["Produto"],
+                row["Tipo"],
+                row["Unidade"],
+                row["Estoque"],
+                row["Estoque Mín"],
+                row["Custo (R$)"],
+                row["Venda (R$)"],
                 row["id"]
             ))
 
