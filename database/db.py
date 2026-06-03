@@ -114,8 +114,10 @@ def init_db():
     """)
 
     cur.execute("""
+    
     CREATE TABLE IF NOT EXISTS vendas(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        produto_id INTEGER,
         produto TEXT,
         quantidade REAL,
         total REAL,
