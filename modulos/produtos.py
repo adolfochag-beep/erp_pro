@@ -36,14 +36,20 @@ def show_produtos():
             value=0.0
         )
 
-        custo = 0.0
-
+        # ✅ CUSTO SEMPRE VISÍVEL (CORRIGIDO)
         if tipo == "Matéria Prima":
             custo = st.number_input(
                 "Custo",
                 min_value=0.0,
                 value=0.0
             )
+        else:
+            custo = st.number_input(
+                "Custo (calculado automaticamente)",
+                value=0.0,
+                disabled=True
+            )
+            st.info("O custo do produto final é calculado automaticamente pela receita.")
 
         venda = st.number_input(
             "Preço Venda",
@@ -59,9 +65,7 @@ def show_produtos():
                 st.error("Informe o nome do produto.")
                 st.stop()
 
-            produtos_existentes = query(
-                "SELECT * FROM produtos"
-            )
+            produtos_existentes = query("SELECT * FROM produtos")
 
             if not produtos_existentes.empty:
 
@@ -73,9 +77,7 @@ def show_produtos():
                 ]
 
                 if not existe.empty:
-                    st.error(
-                        "Já existe um produto com esse nome."
-                    )
+                    st.error("Já existe um produto com esse nome.")
                     st.stop()
 
             execute("""
@@ -207,9 +209,7 @@ def show_produtos():
         """, (prod_id, prod_id))
 
         if not receitas.empty:
-            st.error(
-                "Produto utilizado em receitas. Não pode ser excluído."
-            )
+            st.error("Produto utilizado em receitas. Não pode ser excluído.")
             st.stop()
 
         execute(
