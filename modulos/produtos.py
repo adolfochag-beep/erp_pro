@@ -6,18 +6,19 @@ def show_produtos():
 
     st.subheader("📦 Produtos")
 
+    # ✅ FORA DO FORM → atualiza em tempo real
+    tipo = st.selectbox(
+        "Tipo",
+        ["Produto Final", "Matéria Prima"]
+    )
+
     # =========================
-    # CADASTRO
+    # FORMULÁRIO
     # =========================
 
     with st.form("produto", clear_on_submit=True):
 
         nome = st.text_input("Nome").strip()
-
-        tipo = st.selectbox(
-            "Tipo",
-            ["Produto Final", "Matéria Prima"]
-        )
 
         unidade = st.selectbox(
             "Unidade",
@@ -36,7 +37,7 @@ def show_produtos():
             value=0.0
         )
 
-        # ✅ CUSTO SEMPRE VISÍVEL (CORRIGIDO)
+        # ✅ AGORA FUNCIONA EM TEMPO REAL
         if tipo == "Matéria Prima":
             custo = st.number_input(
                 "Custo",
@@ -45,11 +46,11 @@ def show_produtos():
             )
         else:
             custo = st.number_input(
-                "Custo (calculado automaticamente)",
+                "Custo (automático)",
                 value=0.0,
                 disabled=True
             )
-            st.info("O custo do produto final é calculado automaticamente pela receita.")
+            st.info("Custo calculado automaticamente pela receita.")
 
         venda = st.number_input(
             "Preço Venda",
@@ -105,25 +106,17 @@ def show_produtos():
             st.success("✅ Produto cadastrado")
             st.rerun()
 
-    st.divider()
-
     # =========================
     # LISTAGEM
     # =========================
 
-    produtos = query("""
-        SELECT *
-        FROM produtos
-        ORDER BY nome
-    """)
+    st.divider()
+
+    produtos = query("SELECT * FROM produtos ORDER BY nome")
 
     if produtos.empty:
         st.info("Nenhum produto cadastrado.")
         return
-
-    # =========================
-    # ALERTA ESTOQUE
-    # =========================
 
     produtos["Status"] = produtos.apply(
         lambda x:
@@ -141,10 +134,6 @@ def show_produtos():
         height=450,
         disabled=["id", "Status"]
     )
-
-    # =========================
-    # SALVAR ALTERAÇÕES
-    # =========================
 
     if st.button("💾 Salvar Alterações"):
 
@@ -174,48 +163,4 @@ def show_produtos():
             ))
 
         st.success("✅ Alterações salvas")
-        st.rerun()
-
-    st.divider()
-
-    # =========================
-    # EXCLUSÃO
-    # =========================
-
-    st.subheader("🗑️ Excluir Produto")
-
-    produto_del = st.selectbox(
-        "Selecione o produto",
-        produtos["nome"].tolist()
-    )
-
-    if st.button("Excluir Produto"):
-
-        prod = produtos[
-            produtos["nome"] == produto_del
-        ]
-
-        if prod.empty:
-            st.error("Produto não encontrado.")
-            st.stop()
-
-        prod_id = int(prod.iloc[0]["id"])
-
-        receitas = query("""
-            SELECT *
-            FROM receitas
-            WHERE produto_final = ?
-               OR materia_prima = ?
-        """, (prod_id, prod_id))
-
-        if not receitas.empty:
-            st.error("Produto utilizado em receitas. Não pode ser excluído.")
-            st.stop()
-
-        execute(
-            "DELETE FROM produtos WHERE id=?",
-            (prod_id,)
-        )
-
-        st.success("✅ Produto excluído")
         st.rerun()
